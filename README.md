@@ -21,9 +21,9 @@ un fichier de configuration optionnel
 
 Makefile NAME, all, clean, fclean, re
 
-Arguments port : Le port d’écoute
+argument port : Le port d’écoute
 
-password : Le mot de passe de connexion
+argument password : Le mot de passe de connexion
 
 Fonctions externes autorisées
 
