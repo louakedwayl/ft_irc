@@ -38,7 +38,7 @@ recv, signal, sigaction, lseek, fstat, fcntl, poll
 
 Votre binaire devra être appelé comme ceci :
 
-./ircserv port password
+  ./ircserv port password
 
 • port : Le numéro du port sur lequel votre serveur acceptera les connexions en-
 trantes.
