@@ -17,16 +17,22 @@ serveurs IRC sont connectés entre eux afin de créer des réseaux.
 moire) ni s’arrêter de manière inattendue sauf dans le cas d’un comportement
 indéfini.
 Si cela arrive, votre projet sera considéré non fonctionnel et vous aurez 0.
+
 • Vous devez rendre un Makefile qui compilera vos fichiers sources. Il ne doit pas
 relink.
+
 • Votre Makefile doit contenir au minimum les règles suivantes :
 $(NAME), all, clean, fclean et re.
+
 • Compilez votre code avec c++ et les flags -Wall -Wextra -Werror
+
 • Vous devez vous conformer à la norme C++ 98. Par conséquent, votre code doit
 compiler si vous ajoutez le flag -std=c++98
+
 • Dans votre travail, essayez d’utiliser en priorité des fonctionnalités C++ (par exemple,
 préférez <cstring> à <string.h>). Vous pouvez utiliser des fonctions C, mais
 faites votre possible pour choisir la version C++ quand vous le pouvez.
+
 • Tout usage de bibliothèque externe ou de l’ensemble Boost est interdit.
 
 # Partie obligatoire
