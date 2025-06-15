@@ -45,3 +45,12 @@ trantes.
 
 • password : Le mot de passe permettant de s’identifier auprès de votre serveur
 IRC, et qui devra être fourni par tout client IRC souhaitant s’y connecter.
+
+# Partie bonus
+
+Voici quelques fonctionnalités supplémentaires que vous pouvez ajouter à votre ser-
+veur afin qu’il soit encore plus proche d’un vrai serveur IRC :
+
+• L’envoi de fichier.
+
+• Un bot.
