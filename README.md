@@ -39,7 +39,9 @@ recv, signal, sigaction, lseek, fstat, fcntl, poll
 Votre binaire devra être appelé comme ceci :
 
 ./ircserv <port> <password>
+
 • port : Le numéro du port sur lequel votre serveur acceptera les connexions en-
 trantes.
+
 • password : Le mot de passe permettant de s’identifier auprès de votre serveur
 IRC, et qui devra être fourni par tout client IRC souhaitant s’y connecter.
