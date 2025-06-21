@@ -1,4 +1,4 @@
-void	JOIN(ChannelManager & channel_manager, UserManager & user_manager, ClientManager & client_manager, const ServerSettings & server_settings, Client & client, std::string const & args)
+void	JOIN()
 {
 	// on crée une stringstream sur notre string d'arg 
 
