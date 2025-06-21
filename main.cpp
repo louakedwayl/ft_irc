@@ -169,8 +169,8 @@ void read_data_from_socket(int i, struct pollfd **poll_fds, int *poll_count, int
         printf("[%d] Got message: %s", sender_fd, buffer);
 
         memset(&msg_to_send, '\0', sizeof msg_to_send);
-        sprintf(msg_to_send, "[%d] says: %s", sender_fd, buffer);
-        for (int j = 0; j < *poll_count; j++) {
+        snprintf(msg_to_send, sizeof(msg_to_send), "[%d] says: %s", sender_fd, buffer);
+	for (int j = 0; j < *poll_count; j++) {
             dest_fd = (*poll_fds)[j].fd;
             if (dest_fd != server_socket && dest_fd != sender_fd) {
                 status = send(dest_fd, msg_to_send, strlen(msg_to_send), 0);
