@@ -2,6 +2,7 @@
 
 int parse(int argc, char **argv, Data& data)
 {
+    Data::getInstance();
     if (argc != 3)
     {
         std::cerr << "usage ./ircserv <port> <password>" << std::endl ;
@@ -14,8 +15,7 @@ int parse(int argc, char **argv, Data& data)
         std::cerr << "Invalid port: must be a number." << std::endl;
         exit(1);
     }
-
-    data._port = port;             // suppose que _port est un int
+    data._port = port;
     data._password = argv[2];
     return (0);
 }

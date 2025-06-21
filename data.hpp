@@ -23,16 +23,28 @@
 
 class Data
 {
-    public:
+    private :
         int _server_socket;
         int _port;
         std::string _password;
         std::vector<Client> _clients;
         std::vector<Channel> _channels;
+
+    public :
+        static Data& getInstance();
+        
+        int getServerSocket() const;
+        void setServerSocket(int sock);
+
+        int getPort() const;
+        void setPort(int port);
+
+        void setPassword(const std::string& pass);
+        bool checkPassword(const std::string& attempt) const;
+
 };
 
 //parse.cpp
 int parse(int argc, char **argv, Data& data);
-
 
 #endif
