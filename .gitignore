@@ -1,0 +1,18 @@
+# Fichiers de build
+*.o
+*.out
+*.exe
+*.a
+*.so
+
+# Makefile génère ces fichiers
+main
+ircserv
+
+# Fichiers d’édition
+*~
+*.swp
+
+# Dossiers
+build/
+
