@@ -24,8 +24,6 @@ int main(int argc, char **argv)
         return (EXIT_FAILURE);
 
 
-    // Écoute du port via la socket
-
     // // Préparation du tableau des descripteurs de fichier pour poll()
     // // On va commencer avec assez de place pour 5 fds dans le tableau,
     // // on réallouera si nécessaire
