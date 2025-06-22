@@ -1,6 +1,7 @@
 #ifndef DATA_hpp
 #define DATA_hpp
 
+#include <cerrno>
 #include <errno.h>
 #include <netdb.h>
 #include <poll.h>
@@ -19,8 +20,6 @@
 #include "client.hpp"
 #include "channel.hpp"
 
-#define PORT 4243
-
 class Data
 {
     private :
@@ -29,10 +28,15 @@ class Data
         std::string _password;
         std::vector<Client> _clients;
         std::vector<Channel> _channels;
+    
+        Data();
+        ~Data();
+        Data(const Data&);
+        Data& operator=(const Data&);
 
     public :
         static Data& getInstance();
-        
+    
         int getServerSocket() const;
         void setServerSocket(int sock);
 
@@ -45,6 +49,11 @@ class Data
 };
 
 //parse.cpp
-int parse(int argc, char **argv, Data& data);
+int parse(int argc, char **argv);
+
+//server.cpp
+int make_server();
+int create_server_socket(void);
+int server_listen();
 
 #endif
