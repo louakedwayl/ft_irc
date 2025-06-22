@@ -28,12 +28,13 @@ class Data
         std::string _password;
         std::vector<Client> _clients;
         std::vector<Channel> _channels;
-    
+        std::vector<struct pollfd> _poll_fds;
+        
         Data();
         ~Data();
         Data(const Data&);
         Data& operator=(const Data&);
-
+        
     public :
         static Data& getInstance();
     
@@ -45,8 +46,14 @@ class Data
 
         void setPassword(const std::string& pass);
         bool checkPassword(const std::string& attempt) const;
-
+        
+        std::vector<struct pollfd>& getPollFds();
+        void addPollFd(int fd);
+        void removePollFdAtIndex(size_t i);
 };
+
+//data.cpp
+int addPollFd(int fd);
 
 //parse.cpp
 int parse(int argc, char **argv);
