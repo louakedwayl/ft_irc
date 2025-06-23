@@ -4,6 +4,7 @@
 *.exe
 *.a
 *.so
+*.d
 
 # Makefile génère ces fichiers
 main

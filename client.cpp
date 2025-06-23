@@ -28,3 +28,22 @@ void Client::eraseFromSendBuffer(size_t n) {
         _send_buffer.erase(0, n);
     }
 }
+
+void Client::sendMessage(const std::string& message) const
+{
+    const char* msg_cstr = message.c_str();
+    size_t total_sent = 0;
+    size_t msg_len = message.length();
+
+    while (total_sent < msg_len)
+    {
+        int sent = send(_fd, msg_cstr + total_sent, msg_len - total_sent, 0);
+        if (sent == -1)
+        {
+            // Gestion basique des erreurs
+            perror("send");
+            break;
+        }
+        total_sent += sent;
+    }
+}

@@ -16,9 +16,11 @@
 #include <vector>
 #include <sstream>
 #include <string>
-
+#include <cstring>
+#include <cstdio>
 #include "client.hpp"
 #include "channel.hpp"
+#include <algorithm>
 
 class Data
 {
@@ -26,7 +28,7 @@ class Data
         int _server_socket;
         int _port;
         std::string _password;
-        std::vector<Client> _clients;
+        std::vector<Client*> _clients;
         std::vector<Channel> _channels;
         std::vector<struct pollfd> _poll_fds;
         
@@ -52,7 +54,7 @@ class Data
         void removePollFdAtIndex(size_t i);
 
         
-        void addClient(const Client& client);
+        void addClient(Client* client);
         Client* getClientByFd(int fd);
         void removeClientByFd(int fd);
 

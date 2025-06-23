@@ -63,7 +63,7 @@ void Data::removePollFdAtIndex(size_t i)
     }
 }
 
-void Data::addClient(const Client& client) 
+void Data::addClient(Client* client) 
 {
     _clients.push_back(client);
 }
@@ -71,8 +71,8 @@ void Data::addClient(const Client& client)
 Client* Data::getClientByFd(int fd) 
 {
     for (size_t i = 0; i < _clients.size(); ++i) {
-        if (_clients[i].getFd() == fd) {
-            return &_clients[i];  // Retourne un pointeur vers le client trouvé
+        if (_clients[i]->getFd() == fd) {
+            return _clients[i];  // Retourne un pointeur vers le client trouvé
         }
     }
     return NULL;  // Aucun client avec ce fd
@@ -80,8 +80,9 @@ Client* Data::getClientByFd(int fd)
 
 void Data::removeClientByFd(int fd)
 {
-    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-        if (it->getFd() == fd) {
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if ((*it)->getFd() == fd)
+        {
             _clients.erase(it);
             return;  // Client supprimé, on sort
         }

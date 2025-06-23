@@ -33,6 +33,8 @@ class Client
         void appendToSendBuffer(const std::string& msg);  // pour ajouter du texte
         std::string& getSendBuffer();
         void eraseFromSendBuffer(size_t n);
+        void sendMessage(const std::string& message) const;
+
 };
 
 #endif
