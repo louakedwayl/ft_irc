@@ -181,6 +181,9 @@ void parseCommands(Client* client, const char* buffer)
 
         Command command(line);
 
+std::cout << "line: " << line << std::endl;
+
+
 // Accès à la commande
 std::cout << "Commande: " << command.name << std::endl;
 
