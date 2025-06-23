@@ -1,3 +1,24 @@
+static std::string parse_target(std::string arg)
+{
+	std::stringstream	ss(arg);
+	std::string			target;
+
+	std::getline(ss, target, ' ');
+
+	return (target);
+}
+
+static std::string parse_msg(std::string arg)
+{
+	std::stringstream	ss(arg);
+	std::string			message;
+
+	std::getline(ss, message, ':');
+	std::getline(ss, message);
+
+	return (message);
+}
+
 void	MSG()
 {
 	// si PRIVMSG (premier char des args est PAS un #)
