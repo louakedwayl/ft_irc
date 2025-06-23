@@ -1,20 +1,29 @@
-void	USER()
+void	USER(std::string arg)
 {
-	// get username from command
+	User & user = ;// GET USER
+	std::stringstream ss(arg);
+	std::string username;
+	std::getline(ss, username, ' ');
 
-	// if no username -> error
+	if (username.empty())
+	{
+		// write error to Client;
+		return ;
+	}
 
-	// check if that username already exists, if so, ask again
+	user.set_username(username);
 
-	// set the username of the client (cannot be empty)
-
-	// if username has a password and no password is provided or the password is false, error
-	// if error, kill the connection
-
-	// if user has no nickname, ask to set it
-	// if it is already in use, ask again
-	// then set the username (cannot be empty)
-
-	// if user has no password, set it
-	// a password can not be empty
+	if (user.get_is_registered() == false && user.get_nickname().empty() == false)
+	{
+		if (user.get_password() == SERVER.password)
+		{
+			// write welcome to Client
+			user.set_is_registered(true);	
+		}
+		else
+		{
+			// write error to Client
+			// disconnect the Client
+		}
+	}
 }
