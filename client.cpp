@@ -1,13 +1,14 @@
 #include "data.hpp"
+#include "channel.hpp"
 
 
 Client::Client(int fd) : _fd(fd) , _state(CONNECTING){}
 
 int Client::getFd() const { return _fd; }
 
-void Client::setName(const std::string& name) { _name = name; }
+void Client::setName(const std::string& name) { _nickName = name; }
 
-std::string Client::getName() const { return _name; }
+std::string Client::getName() const { return _nickName; }
 
 void Client::setState(ClientState state) { _state = state; }
 
@@ -46,4 +47,25 @@ void Client::sendMessage(const std::string& message) const
         }
         total_sent += sent;
     }
+}
+
+void Client::addChannel(Channel* channel)
+{
+    if (std::find(_channels.begin(), _channels.end(), channel) == _channels.end()) {
+        _channels.push_back(channel);
+    }
+}
+
+void Client::removeChannel(Channel* channel) 
+{
+    std::vector<Channel*>::iterator it = std::find(_channels.begin(), _channels.end(), channel);
+    if (it != _channels.end()) {
+        _channels.erase(it);
+    }
+}
+
+
+const std::vector<Channel*>& Client::getChannels() const 
+{
+    return _channels;
 }

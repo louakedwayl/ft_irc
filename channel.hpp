@@ -2,12 +2,16 @@
 #define CHANNEL_HPP
 
 #include "data.hpp"
+#include "client.hpp"
+
+class Client;
 
 class Channel
 {
     private :
             std::string _name;
             std::vector<Client*> _clients; // clients présents dans le channel
+            std::vector<Client*> _operators;
 
     public:
             Channel(const std::string& name);
@@ -22,6 +26,10 @@ class Channel
 
             // Exemple : broadcast message à tous les clients du channel sauf l'expéditeur
             void broadcastMessage(Client* sender, const std::string& message) const;
+
+            void addOperator(Client* client);
+            void removeOperator(Client* client);
+            bool isOperator(Client* client) const;
 };
 
 #endif

@@ -35,3 +35,25 @@ void Channel::broadcastMessage(Client* sender, const std::string& message) const
         }
     }
 }
+
+void Channel::addOperator(Client* client) 
+{
+    if (std::find(_operators.begin(), _operators.end(), client) == _operators.end())
+    {
+        _operators.push_back(client);
+    }
+}
+
+void Channel::removeOperator(Client* client) 
+{
+    std::vector<Client*>::iterator it = std::find(_operators.begin(), _operators.end(), client);
+    if (it != _operators.end()) 
+    {
+        _operators.erase(it);
+    }
+}
+
+bool Channel::isOperator(Client* client) const 
+{
+    return std::find(_operators.begin(), _operators.end(), client) != _operators.end();
+}

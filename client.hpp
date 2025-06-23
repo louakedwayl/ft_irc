@@ -2,6 +2,7 @@
 #define CLIENT_HPP
 
 #include "data.hpp"
+#include "channel.hpp"
 
 enum ClientState 
 {
@@ -16,7 +17,9 @@ class Client
 {
     private :
         int _fd;
-        std::string _name;
+        std::string _nickName;
+        std::string _UserName;
+        std::vector<Channel*> _channels;
         std::string _recv_buffer;
         std::string _send_buffer;
         ClientState _state;
@@ -34,6 +37,10 @@ class Client
         std::string& getSendBuffer();
         void eraseFromSendBuffer(size_t n);
         void sendMessage(const std::string& message) const;
+
+        void addChannel(Channel* channel);
+        void removeChannel(Channel* channel);
+        const std::vector<Channel*>& getChannels() const;
 
 };
 
