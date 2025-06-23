@@ -11,7 +11,7 @@ yellow		= /bin/echo -e "\x1b[33m\#\# $1\x1b[0m"
 blue		= /bin/echo -e "\x1b[34m\#\# $1\x1b[0m"
 purple		= /bin/echo -e "\x1b[35m\#\# $1\x1b[0m"
 
-SRC = main.cpp data.cpp parse.cpp server.cpp
+SRC = main.cpp data.cpp parse.cpp server.cpp client.cpp channel.cpp
 
 OBJ = $(SRC:.cpp=.o)
 

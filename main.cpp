@@ -17,79 +17,121 @@ int main(int argc, char **argv)
     std::cout << "[Server] Set up poll fd array\n" << std::endl;
 
     while (1) 
-    { // Boucle principale
-        // Sonde les sockets prêtes (avec timeout de 2 secondes)
-        int status = poll(data.getPollFds().data(), data.getPollFds().size(), 2000);
-        if (status == -1) 
+{
+    int status = poll(data.getPollFds().data(), data.getPollFds().size(), 2000);
+    if (status == -1) 
+    {
+        std::cerr << "[Server] Poll error: " << strerror(errno) << std::endl;
+        exit(1);
+    }
+    else if (status == 0) 
+    {
+        std::cout << "[Server] ⏳ Poll timeout reached: no sockets ready. Looping again..." << std::endl;
+        continue;
+    }
+
+    for (size_t i = 0; i < data.getPollFds().size(); i++) 
+    {
+        short revents = data.getPollFds()[i].revents;
+        int fd = data.getPollFds()[i].fd;
+
+        if (revents == 0)
+            continue; // rien à faire
+
+        std::cout << "[Server] socket FD " << fd << " is ready for ";
+
+        if (revents & POLLIN) std::cout << "reading ";
+        if (revents & POLLOUT) std::cout << "writing ";
+        if (revents & POLLERR) std::cout << "error ";
+        if (revents & POLLHUP) std::cout << "hangup ";
+        std::cout << std::endl;
+
+        // Gestion des erreurs & hangup avant toute lecture ou écriture
+        if (revents & (POLLERR | POLLHUP))
         {
-            std::cerr << "[Server] Poll error: " << strerror(errno) << std::endl;
-            exit(1);
-        }
-        else if (status == 0) 
-        {
-            // Aucun descipteur de fichier de socket n'est prêt //donc on retourne au denbut de la boucle
-            std::cout << "[Server] ⏳ Poll timeout reached: no sockets ready. Looping again..." << std::endl;
+            std::cerr << "[Server] Closing connection on fd " << fd << " due to error/hangup." << std::endl;
+            // Tu dois fermer la socket, retirer du poll et supprimer le client
+            close(fd);
+            data.removePollFdAtIndex(i);
+            // Suppression du client associé (à implémenter)
+            data.removeClientByFd(fd);
+            // Ajuste i car vecteur modifié
+            --i;
             continue;
         }
 
-        // Boucle sur notre tableau de sockets
-        for (size_t i = 0; i < data.getPollFds().size(); i++) 
+        if (revents & POLLIN)
         {
-            if ((data.getPollFds()[i].revents & POLLIN) == 0) 
+            if (fd == data.getServerSocket())
             {
-                // La socket n'est pas prête à être lue
-                // on s'arrête là et on continue la boucle
-                continue ;
+                // Nouvelle connexion entrante
+                accept_new_connection(data);
             }
-        std::cout << "[Server] socket FD " << data.getPollFds()[i].fd << " is ready for ";
-
-            if (data.getPollFds()[i].revents & POLLIN)
-                std::cout << "reading ";
-            if (data.getPollFds()[i].revents & POLLOUT)
-                std::cout << "writing ";
-            if (data.getPollFds()[i].revents & POLLERR)
-                std::cout << "error ";
-            if (data.getPollFds()[i].revents & POLLHUP)
-                std::cout << "hangup ";
-            std::cout << std::endl; 
-            if (data.getPollFds()[i].revents & POLLIN) 
+            else
             {
-                if (data.getPollFds()[i].fd == data.getServerSocket()) 
-                {
-                    // Nouvelle connexion entrante
-                    accept_new_connection(data);
-                }
-                else 
-                {
-                    // Données reçues d’un client
-                    read_data_from_socket(i, data);
-                }
+                // Données reçues d’un client
+                read_data_from_socket(i, data);
+            }
         }
-        return (EXIT_SUCCESS);
+
+        if (revents & POLLOUT)
+        {
+            // Socket prête à écrire, on tente d’envoyer les données du buffer
+            Client* client = data.getClientByFd(fd);
+            if (client && !client->getSendBuffer().empty())
+            {
+                int sent = send(fd, client->getSendBuffer().c_str(), client->getSendBuffer().size(), 0);
+                if (sent == -1)
+                {
+                    std::cerr << "[Server] Send error on fd " << fd << ": " << strerror(errno) << std::endl;
+                    close(fd);
+                    data.removePollFdAtIndex(i);
+                    data.removeClientByFd(fd);
+                    --i;
+                    continue;
+                }
+                else
+                {
+                    client->eraseFromSendBuffer(sent);
+                    if (client->getSendBuffer().empty())
+                    {
+                        // Plus rien à envoyer, on désactive POLLOUT pour ce fd
+                        data.getPollFds()[i].events &= ~POLLOUT;
+                    }
+                }
+            }
+        }
     }
 }
 }
+
 
 
 void accept_new_connection(Data &data)
 {
     int client_fd = accept(data.getServerSocket(), NULL, NULL);
-    if (client_fd == -1) {
-        fprintf(stderr, "[Server] Accept error: %s\n", strerror(errno));
+    if (client_fd == -1)
+     {
+        std::cerr <<"[Server] Accept error: " << strerror(errno) << std::endl;
         return;
     }
 
-    // Ajout dans le vecteur poll_fds via ta méthode
+    Client new_client(client_fd);
+    // Préparer la reponse a la requete irc de connection dans le buffer d'envoi du client
+    std::ostringstream welcome_msg;
+    welcome_msg << "Welcome. You are client fd [" << client_fd << "]\n";
+    new_client.appendToSendBuffer(welcome_msg.str());  // On remplit le buffer d'envoi
+    
+    data.addClient(new_client);
     data.addPollFd(client_fd);
 
-    printf("[Server] Accepted new connection on client socket %d.\n", client_fd);
+    std::cout << "[Server] Accepted new connection on client socket " << client_fd << std::endl;
+    
 
-    char msg_to_send[BUFSIZ];
-    snprintf(msg_to_send, sizeof(msg_to_send), "Welcome. You are client fd [%d]\n", client_fd);
-
-    int status = send(client_fd, msg_to_send, strlen(msg_to_send), 0);
-    if (status == -1) {
-        fprintf(stderr, "[Server] Send error to client %d: %s\n", client_fd, strerror(errno));
+    int status = send(client_fd, new_client.getSendBuffer().c_str(), new_client.getSendBuffer().size(), 0);
+    if (status == -1) 
+    {
+        std::cerr << "[Server] Send error to client fd" << client_fd <<": " << strerror(errno);
     }
 }
 

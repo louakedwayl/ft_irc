@@ -50,6 +50,12 @@ class Data
         std::vector<struct pollfd>& getPollFds();
         void addPollFd(int fd);
         void removePollFdAtIndex(size_t i);
+
+        
+        void addClient(const Client& client);
+        Client* getClientByFd(int fd);
+        void removeClientByFd(int fd);
+
 };
 
 //data.cpp

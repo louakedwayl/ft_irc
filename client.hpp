@@ -28,8 +28,11 @@ class Client
         void setName(const std::string& name);
         std::string getName() const ;
 
-        void setState(ClientState state) { _state = state; };
-        ClientState getState() const { return _state; };
+        void setState(ClientState state);
+        ClientState getState() const ;
+        void appendToSendBuffer(const std::string& msg);  // pour ajouter du texte
+        std::string& getSendBuffer();
+        void eraseFromSendBuffer(size_t n);
 };
 
 #endif
