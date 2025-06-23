@@ -34,7 +34,7 @@ void	TOPIC(std::string arg)
 		return ;
 
 	Channel channel = ; // GET CHANNEL
-	User & 	user = ; // GET USER
+	User &	user = ; // GET USER
 
 	if (topic.empty() == true) // pas d'args -> user veut seulement voir le Topic
 	{
