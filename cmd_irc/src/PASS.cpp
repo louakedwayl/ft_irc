@@ -1,4 +1,4 @@
-void	PASS(std::string arg)
+void	PASS(std::string const & arg)
 {
 	User & 		user = ; // GET USER
 	std::string server_password = arg;

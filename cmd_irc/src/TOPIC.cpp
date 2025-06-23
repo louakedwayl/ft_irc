@@ -1,4 +1,4 @@
-static bool	valid_topic_request(std::string channel)
+static bool	valid_topic_request(std::string const & channel)
 {
 	if (/* Channel doesn't exist */)
 	{
@@ -21,7 +21,7 @@ static bool	valid_topic_request(std::string channel)
 	return (true);
 }
 
-void	TOPIC(std::string arg)
+void	TOPIC(std::string const & arg)
 {
 	std::stringstream 	ss(arg);
 	std::string 		channel;

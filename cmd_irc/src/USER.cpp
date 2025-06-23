@@ -1,4 +1,4 @@
-void	USER(std::string arg)
+void	USER(std::string const & arg)
 {
 	User & user = ;// GET USER
 	std::stringstream ss(arg);
