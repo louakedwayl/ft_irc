@@ -1,4 +1,4 @@
-bool	valid_topic_request(std::string channel)
+static bool	valid_topic_request(std::string channel)
 {
 	if (/* Channel doesn't exist */)
 	{
