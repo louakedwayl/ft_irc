@@ -123,10 +123,49 @@ void accept_new_connection(Data &data)
     std::cout << "[Server] Accepted new connection on client socket " << client_fd << std::endl;
 }
 
-void handleCommand(Client* client, std::string line)
+void handleCommand(Client* client, Command command)
 {
     (void)client;
-    (void)line;
+    if (command.name == "CAP")
+    {
+        std::cout << "test";
+    }
+    else if (command.name == "PASS")
+    {
+
+    }
+    else if (command.name == "NICK")
+    {
+
+    }
+    else if (command.name == "JOIN")
+    {
+
+    }
+    else if (command.name == "PRIVMSG")
+    {
+
+    }
+    else if (command.name == "KICK")
+    {
+
+    }
+    else if (command.name == "TOPIC")
+    {
+
+    }
+    else if (command.name == "MODE")
+    {
+
+    }
+    else if (command.name == "USER")
+    {
+
+    }
+    else
+    {
+        // commande inconnue renvoyer error
+    }
 }
 
 void parseCommands(Client* client, const char* buffer)
@@ -140,7 +179,15 @@ void parseCommands(Client* client, const char* buffer)
         if (!line.empty() && line[line.size() - 1] == '\r')
             line.erase(line.size() - 1, 1);
 
-        std::cout << "[" << client->getFd() << "] Command: " << line << std::endl;
+        Command command(line);
+
+// Accès à la commande
+std::cout << "Commande: " << command.name << std::endl;
+
+// Affiche tous les arguments
+for (size_t i = 0; i < command.args.size(); ++i) {
+    std::cout << "Arg[" << i << "] = " << command.args[i] << std::endl;
+}
 
         // Ici, appelle ta fonction qui traite chaque commande
         handleCommand(client, line);

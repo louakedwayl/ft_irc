@@ -21,6 +21,7 @@
 #include "client.hpp"
 #include "channel.hpp"
 #include <algorithm>
+#include "CMD.hpp"
 
 class Data
 {
