@@ -29,7 +29,7 @@ class Data
         int _port;
         std::string _password;
         std::vector<Client*> _clients;
-        std::vector<Channel> _channels;
+        std::vector<Channel*> _channels;
         std::vector<struct pollfd> _poll_fds;
         
         Data();
@@ -45,6 +45,8 @@ class Data
 
         int getPort() const;
         void setPort(int port);
+
+        std::vector<Channel*>getChannel() const;
 
         void setPassword(const std::string& pass);
         bool checkPassword(const std::string& attempt) const;

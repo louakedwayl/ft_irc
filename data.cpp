@@ -119,3 +119,8 @@ bool Data::nickNameIsAvailable(const std::string& nick) const
     }
     return true;  // Nick libre
 }
+
+std::vector<Channel*>Data::getChannel() const
+{
+    return _channels;
+}

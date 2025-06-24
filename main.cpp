@@ -210,6 +210,18 @@ void NICK (Client *client, Command command)
     }
 }
 
+void LIST (Client *client, Command command)
+{
+    (void)client;
+    (void)command;
+    Data &data = Data::getInstance();
+
+    std::vector<Channel *>ChannelHub = data.getChannel();
+    if (ChannelHub.empty())
+        std::cout << "None Channel .\n you can create a channel whith JOIN" << std::endl ;
+}
+
+
 void handleCommand(Client* client, Command command)
 {
     if (command.name == "CAP")
@@ -223,6 +235,10 @@ void handleCommand(Client* client, Command command)
     else if (command.name == "NICK")
     {
         NICK (client, command);
+    }
+    else if (command.name == "LIST")
+    {
+        LIST (client, command);
     }
     else if (command.name == "JOIN")
     {
@@ -304,6 +320,9 @@ void read_data_from_socket(int i, Data& data)
     {
         if (bytes_read == 0)
         {
+            // client qui se deco tt seul
+
+            close (sender_fd);
             std::cout << "[" << sender_fd << "] Client disconnected." << std::endl;
         }
         else
