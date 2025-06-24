@@ -58,6 +58,11 @@ class Data
         Client* getClientByFd(int fd);
         void removeClientByFd(int fd);
 
+        void shutdown();
+        void clearClients();
+
+        bool nickNameIsAvailable(const std::string& nick) const;
+
 };
 
 //data.cpp

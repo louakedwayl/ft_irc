@@ -100,6 +100,15 @@ int main(int argc, char **argv)
                     }
                 }
             }
+            if (client->getState() == TO_DISCONNECT)
+            {
+                std::cout << "[Server] Disconnecting client on fd " << fd << " after flush.\n";
+                close(fd);
+                data.removePollFdAtIndex(i);
+                data.removeClientByFd(fd);
+                --i;
+                continue;
+            }
         }
     }
     }
@@ -123,20 +132,97 @@ void accept_new_connection(Data &data)
     std::cout << "[Server] Accepted new connection on client socket " << client_fd << std::endl;
 }
 
+void CAP (Client* client)
+{
+    Data &data = Data::getInstance();
+    client->appendToSendBuffer("CAP * LS :\r\n");
+
+    for (size_t i = 0; i < data.getPollFds().size(); ++i)
+    {
+        if (data.getPollFds()[i].fd == client->getFd())
+        {
+            data.getPollFds()[i].events |= POLLOUT;
+            break;
+        }
+    }
+}
+
+void PASS (Client *client, Command command)
+{
+    Data &data = Data::getInstance();
+
+    if (!command.args.empty() && data.checkPassword(command.args[0]))
+    {
+        client->appendToSendBuffer(":irc.slytherin.com NOTICE AUTH :🐍Welcome to the Slytherin IRC server 🐍!\r\n");
+        client->setState(SENT_PASS);
+    }
+    else
+    {
+        client->appendToSendBuffer("ERROR :Password incorrect\r\n");
+        client->markForDisconnect();
+    }
+    for (size_t i = 0; i < data.getPollFds().size(); ++i)
+    {
+        if (data.getPollFds()[i].fd == client->getFd())
+        {
+            data.getPollFds()[i].events |= POLLOUT;
+            break;
+        }
+    }
+}
+
+void QUIT_SERV (Client *client, Command command)
+{
+    Data &data = Data::getInstance();
+    (void)client;
+    (void)command;
+    data.shutdown();
+    exit (0);
+}
+
+void NICK (Client *client, Command command)
+{
+     Data &data = Data::getInstance();
+
+    // verifier si nickname deja pris 
+    // si oui  envoies ce message d’erreur au client. :irc.slytherin.com 433 * <nick> :Nickname is already in use
+    if (!command.args.empty() && data.nickNameIsAvailable(command.args[0]))
+    {
+            client->setNickName(command.args[0]);
+            client->setState(SENT_NICK);
+            std::cout << "[Server] Nickname assigned: " << command.args[0]
+                  << " (fd: " << client->getFd() << ")" << std::endl;
+
+                  //probleme la si deja nickname deja pris renvoie <nick>
+    }
+    else
+    {
+        std::cerr << "[Server] Nickname already in use: " << command.args[0] << std::endl;
+        client->appendToSendBuffer(":irc.slytherin.com 433 * <nick> :Nickname is already in use\r\n");
+        for (size_t i = 0; i < data.getPollFds().size(); ++i)
+        {
+            if (data.getPollFds()[i].fd == client->getFd())
+            {
+                data.getPollFds()[i].events |= POLLOUT;
+                break;
+            }
+        }
+    }
+}
+
 void handleCommand(Client* client, Command command)
 {
-    (void)client;
     if (command.name == "CAP")
     {
-        std::cout << "test";
+        CAP (client );
     }
     else if (command.name == "PASS")
     {
-
+        PASS (client, command);
     }
     else if (command.name == "NICK")
     {
-
+        NICK (client, command);
     }
     else if (command.name == "JOIN")
     {
@@ -161,6 +247,10 @@ void handleCommand(Client* client, Command command)
     else if (command.name == "USER")
     {
 
+    }
+    else if (command.name == "/QUIT_SERV")
+    {
+        QUIT_SERV(client, command);
     }
     else
     {

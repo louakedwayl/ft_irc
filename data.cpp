@@ -83,8 +83,39 @@ void Data::removeClientByFd(int fd)
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
         if ((*it)->getFd() == fd)
         {
+            delete *it;
             _clients.erase(it);
             return;  // Client supprimé, on sort
         }
     }
+}
+
+void Data::clearClients()
+{
+    for (size_t i = 0; i < _clients.size(); ++i)
+    {
+        delete _clients[i];  // libère la mémoire
+    }
+    _clients.clear();  // vide le vecteur (supprime tous les pointeurs)
+}
+
+void Data::shutdown()
+{
+    for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+    {
+        close((*it)->getFd());
+    }
+
+    clearClients();
+    std::cout << "/QUIT_SERV :Server is shutting down, goodbye.";
+}
+
+bool Data::nickNameIsAvailable(const std::string& nick) const
+{
+    for (std::vector<Client*>::const_iterator it = _clients.begin(); it != _clients.end(); ++it)
+    {
+        if ((*it)->getNickName() == nick)
+            return false;  // Nick déjà pris
+    }
+    return true;  // Nick libre
 }

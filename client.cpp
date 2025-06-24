@@ -6,9 +6,13 @@ Client::Client(int fd) : _fd(fd) , _state(CONNECTING){}
 
 int Client::getFd() const { return _fd; }
 
-void Client::setName(const std::string& name) { _nickName = name; }
+void Client::setNickName(const std::string& name) { _nickName = name; }
 
-std::string Client::getName() const { return _nickName; }
+std::string Client::getNickName() const { return _nickName; }
+
+void Client::setUserName(const std::string& name) { _nickName = name; }
+
+std::string Client::getUserName() const { return _nickName; }
 
 void Client::setState(ClientState state) { _state = state; }
 
@@ -22,7 +26,8 @@ std::string& Client::getSendBuffer() {
     return _send_buffer;
 }
 
-void Client::eraseFromSendBuffer(size_t n) {
+void Client::eraseFromSendBuffer(size_t n) 
+{
     if (n >= _send_buffer.size()) {
         _send_buffer.clear();
     } else {
@@ -68,4 +73,9 @@ void Client::removeChannel(Channel* channel)
 const std::vector<Channel*>& Client::getChannels() const 
 {
     return _channels;
+}
+
+void Client::markForDisconnect()
+{
+    _state = TO_DISCONNECT;
 }

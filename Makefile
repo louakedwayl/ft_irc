@@ -11,7 +11,11 @@ yellow		= /bin/echo -e "\x1b[33m\#\# $1\x1b[0m"
 blue		= /bin/echo -e "\x1b[34m\#\# $1\x1b[0m"
 purple		= /bin/echo -e "\x1b[35m\#\# $1\x1b[0m"
 
-SRC = main.cpp data.cpp parse.cpp server.cpp client.cpp channel.cpp CMD.cpp
+CMD_SRC = $(addprefix cmd_irc/, CAP.cpp INVITE.cpp JOIN.cpp KICK.cpp MODE.cpp \
+                      MSG.cpp NICK.cpp PASS.cpp TOPIC.cpp USER.cpp )
+
+SRC = main.cpp data.cpp parse.cpp server.cpp client.cpp channel.cpp CMD.cpp $(CMD_SRC)
+
 
 OBJ = $(SRC:.cpp=.o)
 
@@ -26,6 +30,7 @@ $(NAME) : $(OBJ)
 	@$(call blue,"✅ $@ build successful!")
 
 %.o: %.cpp
+	@mkdir -p $(dir $@)
 	@$(CXX) $(CXXFLAGS) -MMD -c $< -o $@
 	@$(call blue,"✅ $< compiled!")
 

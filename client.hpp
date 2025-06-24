@@ -3,14 +3,17 @@
 #include "data.hpp"
 #include "channel.hpp"
 
-enum ClientState 
+enum ClientState
 {
-    CONNECTING,
-    SENT_PASS,
-    SENT_NICK,
-    SENT_USER,
-    REGISTERED
+    CONNECTING,     // État initial du client : juste connecté, pas encore identifié
+    SENT_PASS,      // Le client a envoyé PASS, mot de passe correct
+    TO_DISCONNECT,  // Le client est marqué pour être déconnecté proprement (ex. : mauvais mot de passe)
+    SENT_NICK,      // Le client a envoyé NICK
+    SENT_USER,      // Le client a envoyé USER
+    REGISTERED     // Le client est totalement connecté (PASS + NICK + USER valides)
 };
+
+
 
 class Client
 {
@@ -27,8 +30,11 @@ class Client
         Client(int fd);
 
         int getFd() const ;
-        void setName(const std::string& name);
-        std::string getName() const ;
+        void setNickName(const std::string& name);
+        std::string getNickName() const ;
+
+        void setUserName(const std::string& name);
+        std::string getUserName() const ;
 
         void setState(ClientState state);
         ClientState getState() const ;
@@ -40,5 +46,7 @@ class Client
         void addChannel(Channel* channel);
         void removeChannel(Channel* channel);
         const std::vector<Channel*>& getChannels() const;
+
+        void markForDisconnect();
 
 };
