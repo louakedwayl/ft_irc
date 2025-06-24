@@ -1,5 +1,4 @@
-#ifndef CLIENT_HPP
-#define CLIENT_HPP
+#pragma once
 
 #include "data.hpp"
 #include "channel.hpp"
@@ -43,5 +42,3 @@ class Client
         const std::vector<Channel*>& getChannels() const;
 
 };
-
-#endif

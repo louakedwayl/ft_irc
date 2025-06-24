@@ -2,7 +2,10 @@
 
 Channel:: Channel(const std::string& name): _name(name)
 {
-
+    this->_is_invite_only = false;
+    this->_is_topic_restricted_to_operators = false;
+    this->_channel_key = "";
+    this->_users_limit = -1;
 }
 
 const std::string& Channel::getName() const { return _name; }

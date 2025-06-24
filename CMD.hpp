@@ -1,5 +1,4 @@
-#ifndef COMMAND_HPP
-#define COMMAND_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -12,5 +11,3 @@ struct Command
 
     Command(const std::string& line);  // Constructeur qui parse une ligne IRC
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef CHANNEL_HPP
-#define CHANNEL_HPP
+#pragma once
 
 #include "data.hpp"
 #include "client.hpp"
@@ -12,6 +11,11 @@ class Channel
             std::string _name;
             std::vector<Client*> _clients; // clients présents dans le channel
             std::vector<Client*> _operators;
+
+            bool                _is_invite_only;
+            bool                _is_topic_restricted_to_operators;
+            std::string         _channel_key;
+            unsigned int        _users_limit;
 
     public:
             Channel(const std::string& name);
@@ -31,6 +35,3 @@ class Channel
             void removeOperator(Client* client);
             bool isOperator(Client* client) const;
 };
-
-#endif
-

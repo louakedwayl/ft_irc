@@ -1,5 +1,4 @@
-#ifndef DATA_hpp
-#define DATA_hpp
+#pragma once
 
 #include <cerrno>
 #include <errno.h>
@@ -71,5 +70,3 @@ int parse(int argc, char **argv);
 int make_server();
 int create_server_socket(void);
 int server_listen();
-
-#endif
