@@ -1,4 +1,6 @@
 #include "data.hpp"
+#include <sstream>
+
   // le port de notre serveur
 void accept_new_connection(Data &data);
 void read_data_from_socket(int i, Data &data);
@@ -40,6 +42,16 @@ int main(int argc, char **argv)
                 continue; // rien à faire
 
             std::cout << "[Server] socket FD " << fd << " is ready for ";
+
+/*
+POLLERR : il y a une erreur de socket détectée (exemple : problème réseau, 
+socket cassée, erreur inattendue). Le socket n’est pas forcément fermé mais quelque chose ne va pas.
+*/
+
+/*
+POLLHUP : le peer a fermé la connexion (client ou serveur a fermé proprement le socket).
+ C’est une "fin de communication" détectée.
+*/
 
             if (revents & POLLIN) std::cout << "reading ";
             if (revents & POLLOUT) std::cout << "writing ";
@@ -148,13 +160,86 @@ void CAP (Client* client)
     }
 }
 
+void send001(Client* client)
+{
+    std::string nick;
+    if (client->getNickName().empty())
+        nick = "unknown";
+    else
+        nick = client->getNickName();
+
+    std::string user;
+    if (client->getUserName().empty())
+        user = "unknown";
+    else
+        user = client->getUserName();
+
+    std::string host;
+    if (client->getHostName().empty())
+        host = "localhost";
+    else
+        host = client->getHostName();
+
+    std::string msg = ":irc.slytherin.com 001 " + nick +
+        " :Welcome to the Internet Relay Network " +
+        nick + "!" + user + "@" + host + "\r\n";
+
+    client->appendToSendBuffer(msg);
+}
+
+
+
+void send002(Client* client)
+{
+    std::string nick;
+    if (client->getNickName().empty())
+        nick = "unknown";
+    else
+        nick = client->getNickName();
+
+    std::string msg = ":irc.slytherin.com 002 " + nick +
+        " :Your host is irc.slytherin.com, running version 1.0\r\n";
+
+    client->appendToSendBuffer(msg);
+}
+
+void send003(Client* client)
+{
+    std::string nick;
+    if (client->getNickName().empty())
+        nick = "unknown";
+    else
+        nick = client->getNickName();
+
+    std::string msg = ":irc.slytherin.com 003 " + nick +
+        " :This server was created 25/06/2025\r\n";
+
+    client->appendToSendBuffer(msg);
+}
+
+
+void send004(Client* client)
+{
+    std::string nick;
+    if (client->getNickName().empty())
+        nick = "unknown";
+    else
+        nick = client->getNickName();
+
+    // Format : :server 004 <nick> <servername> <version> <user modes> <channel modes>
+    std::string msg = ":irc.slytherin.com 004 " + nick +
+        " irc.slytherin.com 1.0 ao mtov\r\n";
+
+    client->appendToSendBuffer(msg);
+}
+
 void PASS (Client *client, Command command)
 {
     Data &data = Data::getInstance();
 
     if (!command.args.empty() && data.checkPassword(command.args[0]))
     {
-        client->appendToSendBuffer(":irc.slytherin.com NOTICE AUTH :🐍Welcome to the Slytherin IRC server 🐍!\r\n");
+        client->appendToSendBuffer(":irc.slytherin.com NOTICE AUTH :Password accepted\r\n");
         client->setState(SENT_PASS);
     }
     else
@@ -196,15 +281,16 @@ static bool	does_nickname_have_channel_prefix(std::string const & nickname)
 	return (false);
 }
 
-
-void NICK (Client *client, Command command)
+void NICK(Client *client, Command command)
 {
-     Data &data = Data::getInstance();
+    Data &data = Data::getInstance();
 
-     if (client->getState() == CONNECTING)
-     {
-        std::cerr << "[Server] NICK: client " << client->getFd() << ": Password not sent. Can't register nickname."<< std::endl;
-        client->appendToSendBuffer(":irc.slytherin.com 433 * <nick> : You need send a password for register \r\n");
+    if (client->getState() == CONNECTING || client->getState() == TO_DISCONNECT)
+    {
+        std::cerr << "[Server] NICK: client " << client->getFd() << ": Password not sent. Can't register nickname." << std::endl;
+        client->appendToSendBuffer(":irc.slytherin.com 464 * :You need to send a password before registering\r\n");
+        client->markForDisconnect();
+
         for (size_t i = 0; i < data.getPollFds().size(); ++i)
         {
             if (data.getPollFds()[i].fd == client->getFd())
@@ -213,39 +299,32 @@ void NICK (Client *client, Command command)
                 break;
             }
         }
-        return ;
-     }
+        client->setState(TO_DISCONNECT);
+        return;
+    }
 
-    // verifier si nickname deja pris 
-    // si oui  envoies ce message d’erreur au client. :irc.slytherin.com 433 * <nick> :Nickname is already in use
     if (command.args.empty())
     {
-        std::cerr << "[Server] NICK: client " << client->getFd() << "no argument." << std::endl;
-        client->appendToSendBuffer(":irc.slytherin.com 433 * <nick> : no argument\r\n");
-    } 
-    else if (does_nickname_have_channel_prefix(command.args[0])) 
-    {
-        std::cerr << "[Server] NICK: client " << client->getFd() << "nickname cannot start by a channel prefix."<< std::endl;
-        client->appendToSendBuffer(":irc.slytherin.com 433 * <nick> : nickname cannot start by a channel prefix\r\n");
+        std::cerr << "[Server] NICK: client " << client->getFd() << " no argument." << std::endl;
+        client->appendToSendBuffer(":irc.slytherin.com 431 * :No nickname given\r\n");
     }
-    else if (command.args[0] == "<nick>_")
+    else if (does_nickname_have_channel_prefix(command.args[0]))
     {
-        return;
+        std::cerr << "[Server] NICK: client " << client->getFd() << " nickname cannot start by a channel prefix." << std::endl;
+        client->appendToSendBuffer(":irc.slytherin.com 432 * " + command.args[0] + " :Erroneous nickname\r\n");
     }
     else if (data.nickNameIsAvailable(command.args[0]))
     {
-            client->setNickName(command.args[0]);
-            client->setState(SENT_NICK);
-            std::cout << "[Server] Nickname assigned: " << command.args[0]
-                  << " (fd: " << client->getFd() << ")" << std::endl;
-            client->appendToSendBuffer(":irc.slytherin.com 433 * <NICK> : Register as " + client->getNickName() + "\r\n");
+        client->setNickName(command.args[0]);
+        client->setState(SENT_NICK);
+        std::cout << "[Server] Nickname assigned: " << command.args[0] << " (fd: " << client->getFd() << ")" << std::endl;
     }
     else
     {
-        std::cerr << "[Server] NICK: client " << client->getFd() <<" Nickname already in use: " << command.args[0] << std::endl;
-        client->appendToSendBuffer(":irc.slytherin.com 433 * <nick> :Nickname is already in use\r\n");
+        std::cerr << "[Server] NICK: client " << client->getFd() << " Nickname already in use: " << command.args[0] << std::endl;
+        client->appendToSendBuffer(":irc.slytherin.com 433 * " + command.args[0] + " :Nickname is already in use\r\n");
     }
-    
+
     for (size_t i = 0; i < data.getPollFds().size(); ++i)
     {
         if (data.getPollFds()[i].fd == client->getFd())
@@ -255,9 +334,16 @@ void NICK (Client *client, Command command)
         }
     }
 
-    if (!client->getUserName().empty() && !client->getNickName().empty())
+    if (client->isFullyRegistered())
+    {
         client->setState(REGISTERED);
+        send001(client);
+        send002(client);
+        send003(client);
+        send004(client);
+    }
 }
+
 
 void LIST (Client *client, Command command)
 {
@@ -267,46 +353,31 @@ void LIST (Client *client, Command command)
 
     std::vector<Channel *>ChannelHub = data.getChannel();
     if (ChannelHub.empty())
-        std::cout << "None Channel .\n you can create a channel whith JOIN" << std::endl ;
-}
-
-void USER (Client *client, Command command)
-{
-    Data &data = Data::getInstance();
-
-     if (client->getState() == CONNECTING)
-     {
-        std::cerr << "[Server] USER: client " << client->getFd() << ": Password not sent. Can't register nickname."<< std::endl;
-        client->appendToSendBuffer(":irc.slytherin.com 433 * <user> : You need send a password for register \r\n");
-        for (size_t i = 0; i < data.getPollFds().size(); ++i)
-        {
-            if (data.getPollFds()[i].fd == client->getFd())
-            {
-                data.getPollFds()[i].events |= POLLOUT;
-                break;
-            }
-        }
-        return ;
-    }
-
-    if (command.args.empty())
     {
-        client->appendToSendBuffer("ERROR :<USER> no argument\r\n");
-
-    }
-    else if (data.checkPassword(command.args[0]))
-    {
-        std::cerr << "[Server] USER: client " << client->getFd() << ": Password not sent. Can't register nickname."<< std::endl;
-        client->appendToSendBuffer(":irc.slytherin.com 433 * <USER> : You need send a password for register \r\n");
-        client->setState(SENT_PASS);
+        client->appendToSendBuffer(":irc.slytherin.com 321 * Channel :Users  Name\r\n");
+        client->appendToSendBuffer(":irc.slytherin.com 461 * None channel\n :LIST: you can create a channel whith JOIN\r\n");
     }
     else
     {
-        client->setUserName(command.args[0]);
-        client->setState(SENT_USER);
-        std::cout << "[Server] Username assigned: " << command.args[0]
-                  << " (fd: " << client->getFd() << ")" << std::endl;
-        client->appendToSendBuffer(":irc.slytherin.com 433 * <USER> : Register as " + client->getUserName() + "\r\n");
+        client->appendToSendBuffer(":irc.slytherin.com 321 * Channel :Users  Name\r\n");
+        for (size_t i = 0; i < ChannelHub.size() ; i++)
+        {
+            Channel *chan = ChannelHub[i];
+
+            // Récupérer nom, nb users, topic (assure-toi que ces méthodes existent)
+            std::string name = chan->getName();
+            size_t userCount = chan->getClients().size();
+            std::string topic = chan->getTopic();
+
+            std::stringstream ss;
+            ss << userCount;
+            std::string userCountStr = ss.str();
+
+            std::string line = ":irc.slytherin.com 322 * " + name + " " + userCountStr + " :" + topic + "\r\n";
+
+
+            client->appendToSendBuffer(line);
+        }
     }
     for (size_t i = 0; i < data.getPollFds().size(); ++i)
     {
@@ -316,8 +387,178 @@ void USER (Client *client, Command command)
             break;
         }
     }
-    if (!client->getUserName().empty() && !client->getNickName().empty())
-        client->setState(REGISTERED);
+
+}
+
+void USER(Client* client, Command command)
+{
+    Data &data = Data::getInstance();
+
+    // Vérifie si le client a passé le mot de passe si nécessaire
+    if (client->getState() == CONNECTING || client->getState() == TO_DISCONNECT)
+    {
+        std::cerr << "[Server] USER: client " << client->getFd() << ": Password not sent. Can't register nickname." << std::endl;
+        client->appendToSendBuffer(":irc.slytherin.com 464 * :Password required\r\n");
+        client->setState(TO_DISCONNECT);
+
+        for (size_t i = 0; i < data.getPollFds().size(); ++i)
+        {
+            if (data.getPollFds()[i].fd == client->getFd())
+            {
+                data.getPollFds()[i].events |= POLLOUT;
+                break;
+            }
+        }
+        return;
+    }
+
+    // USER attend au moins 4 arguments (username, hostname, servername, realname)
+    if (command.args.size() < 4)
+    {
+        client->appendToSendBuffer(":irc.slytherin.com 461 * USER :Not enough parameters\r\n");
+        return;
+    }
+
+    // Assignation des arguments
+    client->setUserName(command.args[0]);    // username
+    client->setHostName(command.args[1]);    // hostname
+    client->setServerName(command.args[2]);  // servername
+    client->setRealName(command.args[3]);    // trailing = realname
+
+    std::cout << "[Server] USER assigned: username=" << client->getUserName()
+              << ", hostname=" << client->getHostName()
+              << ", servername=" << client->getServerName()
+              << ", realname=" << client->getRealName()
+              << " (client fd: " << client->getFd() << ")" << std::endl;
+
+    client->setState(SENT_USER);
+
+if (client->isFullyRegistered())
+{
+    client->setState(REGISTERED);
+    send001(client);
+    send002(client);
+    send003(client);
+    send004(client);
+}
+    // Puis activer POLLOUT pour dire à poll qu'on a des données à envoyer
+    for (size_t i = 0; i < data.getPollFds().size(); ++i)
+    {
+        if (data.getPollFds()[i].fd == client->getFd())
+        {
+            data.getPollFds()[i].events |= POLLOUT;
+            break;
+        }
+    }
+
+}
+
+
+void JOIN (Client *client, Command command)
+{
+    Data &data = Data::getInstance();
+
+    if (client->getState() != REGISTERED)
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> client not registered \r\n");
+        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> client " << client->getFd() << " not registered" << std::endl;
+    }
+    else if (command.args.empty())
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> no argument\r\n");
+        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> no argument." << std::endl;
+    }
+    else if (command.args.size() >= 3 && !command.args[0].empty() && !command.args[1].empty() && !command.args[2].empty())
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> usage : <channel> <password> \r\n");
+        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> usage : <channel> <password> ." << std::endl;
+    }
+    else if (!command.args[0].empty())
+    {
+        if (command.args[0][0] != '#')
+        {
+            client->appendToSendBuffer("ERROR :<JOIN> channel's name should begin by #.\r\n");
+            std::cout << "[server] : client " << client->getFd() << "ERROR :<JOIN> channel's name should begin by #." << std::endl;
+        }
+    }
+    else if (data.getThisChannel(command.args[0]) && data.getThisChannel(command.args[0])->getIsInviteOnly() == true)
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> channel is Invite-only.\r\n");
+        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> channel is Invite-only." << std::endl;
+    }
+    else if (!data.getThisChannel(command.args[0])->getChannelKey().empty() && (command.args[1].empty() || command.args[1] != data.getThisChannel(command.args[0])->getChannelKey()))
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> Invalid channel key.\r\n");
+    }
+    else if (data.getThisChannel(command.args[0])->getUsersLimit() > 0 && data.getThisChannel(command.args[0])->getClients().size() >= static_cast<size_t>(data.getThisChannel(command.args[0])->getUsersLimit()))
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> Channel user limit has been reached.\r\n");
+        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> Channel user limit has been reached." << std::endl;
+    }
+    else if (data.getThisChannel(command.args[0]))
+    {
+        data.getThisChannel(command.args[0])->addClient(client);
+        std::cout << "[server] : client " << client->getFd() << "added to channel " <<  data.getThisChannel(command.args[0])->getName() << std::endl;
+    }
+    else
+    {
+        Channel* channel = new Channel(command.args[0]);
+        data.getChannel().push_back(channel);
+        channel->addClient(client);
+        std::cout << "[server] : client " << client->getFd() << "created new channel " << channel->getName() << std::endl;
+    }
+
+    for (size_t i = 0; i < data.getPollFds().size(); ++i)
+    {
+        if (data.getPollFds()[i].fd == client->getFd())
+        {
+            data.getPollFds()[i].events |= POLLOUT;
+            break;
+        }
+    }
+
+}
+
+void UNKNOWN (Client *client, Command command)
+{
+    (void)client;
+    (void)command;
+    Data &data = Data::getInstance();
+
+    client->appendToSendBuffer("ERROR : Unknown command.\r\n");
+    std::cout << "[SERVER] ERROR : Unknown command." <<std::endl;
+
+    for (size_t i = 0; i < data.getPollFds().size(); ++i)
+    {
+        if (data.getPollFds()[i].fd == client->getFd())
+        {
+            data.getPollFds()[i].events |= POLLOUT;
+            break;
+        }
+    }
+}
+
+void PING(Client* client, Command command) 
+{
+    Data &data = Data::getInstance();
+
+    if (command.args.empty()) 
+    {
+        // Pas d’argument, ignore ou envoie une erreur.
+        return;
+    }
+    std::string response = "PONG :" + command.args[0] + "\r\n";
+    client->appendToSendBuffer(response);
+
+    for (size_t i = 0; i < data.getPollFds().size(); ++i)
+    {
+        if (data.getPollFds()[i].fd == client->getFd())
+        {
+            data.getPollFds()[i].events |= POLLOUT;
+            break;
+        }
+    }
+
 }
 
 
@@ -343,9 +584,13 @@ void handleCommand(Client* client, Command command)
     {
         USER (client, command);
     }
+    else if (command.name == "PING")
+    {
+        PING (client, command);
+    }
     else if (command.name == "JOIN")
     {
-
+        JOIN  (client, command);
     }
     else if (command.name == "PRIVMSG")
     {
@@ -369,7 +614,7 @@ void handleCommand(Client* client, Command command)
     }
     else
     {
-        // commande inconnue renvoyer error
+        UNKNOWN(client, command);
     }
 }
 

@@ -21,6 +21,9 @@ class Client
         int _fd;
         std::string _nickName;
         std::string _UserName;
+        std::string _hostName;
+        std::string _serverName;
+        std::string _realName;
         std::vector<Channel*> _channels;
         std::string _recv_buffer;
         std::string _send_buffer;
@@ -36,6 +39,15 @@ class Client
         void setUserName(const std::string& name);
         std::string getUserName() const ;
 
+        void setRealName(const std::string& realName);
+        const std::string& getRealName() const;
+
+        void setHostName(const std::string& name);
+        const std::string& getHostName() const ;
+
+        void setServerName(const std::string& name);
+        const std::string& getServerName() const ;
+
         void setState(ClientState state);
         ClientState getState() const ;
         void appendToSendBuffer(const std::string& msg);  // pour ajouter du texte
@@ -48,5 +60,9 @@ class Client
         const std::vector<Channel*>& getChannels() const;
 
         void markForDisconnect();
+
+        bool isFullyRegistered() const;
+
+
 
 };

@@ -124,3 +124,14 @@ std::vector<Channel*>Data::getChannel() const
 {
     return _channels;
 }
+
+Channel* Data::getThisChannel(const std::string& name) const
+{
+    for (size_t i = 0 ; i < getChannel().size() ; i++)
+    {
+        if (_channels[i]->getName() == name)
+            return (_channels[i]);
+    }
+    return (NULL);
+}
+

@@ -22,6 +22,7 @@
 #include <algorithm>
 #include "CMD.hpp"
 
+
 class Data
 {
     private :
@@ -47,6 +48,8 @@ class Data
         void setPort(int port);
 
         std::vector<Channel*>getChannel() const;
+        Channel*getThisChannel(const std::string& name) const;
+
 
         void setPassword(const std::string& pass);
         bool checkPassword(const std::string& attempt) const;

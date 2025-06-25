@@ -60,3 +60,41 @@ bool Channel::isOperator(Client* client) const
 {
     return std::find(_operators.begin(), _operators.end(), client) != _operators.end();
 }
+
+bool Channel::getIsInviteOnly()
+{
+    return _is_invite_only;
+}
+bool Channel::getIsTopicRestricted()
+{
+    return _is_topic_restricted_to_operators;
+}
+std::string Channel::getChannelKey()
+{
+    return _channel_key;
+}
+int Channel::getUsersLimit()
+{
+    return _users_limit;
+}
+
+void Channel::setIsInviteOnly(bool x)
+{
+    _is_invite_only = x;
+}
+void Channel::setIsTopicRestricted(bool x)
+{
+    _is_topic_restricted_to_operators = x;
+}
+void Channel::setChannelKey(std::string s)
+{
+    _channel_key = s;
+}
+void Channel::setUsersLimit(int x)
+{
+    _users_limit = x;
+}
+
+const std::string& Channel::getTopic() const { return _topic;}
+
+void  Channel::setTopic(const std::string& topic) { _topic = topic;}

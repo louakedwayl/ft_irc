@@ -79,3 +79,30 @@ void Client::markForDisconnect()
 {
     _state = TO_DISCONNECT;
 }
+
+
+void Client::setHostName(const std::string &name) { _hostName = name; }
+
+const std::string& Client::getHostName() const { return _hostName;} 
+
+
+void Client::setServerName(const std::string &name) { _hostName = name; }
+
+const std::string& Client::getServerName() const { return _hostName;} 
+
+// Dans Client.cpp
+void Client::setRealName(const std::string& realName)
+{
+    _realName = realName;
+}
+
+const std::string& Client::getRealName() const
+{
+    return _realName;
+}
+
+bool Client::isFullyRegistered() const
+{
+        std::cout << "Debug isFullyRegistered: nick='" << getNickName() << "' user='" << getUserName() << "'" << std::endl;
+    return !getNickName().empty() && !getUserName().empty();
+}

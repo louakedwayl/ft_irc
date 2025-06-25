@@ -9,19 +9,38 @@ class Channel
 {
     private :
             std::string _name;
+            std::string _topic;
             std::vector<Client*> _clients; // clients présents dans le channel
             std::vector<Client*> _operators;
 
             bool                _is_invite_only;
             bool                _is_topic_restricted_to_operators;
             std::string         _channel_key;
-            unsigned int        _users_limit;
+            int        _users_limit;
 
     public:
             Channel(const std::string& name);
 
+
             const std::string& getName() const ;
             const std::vector<Client*>& getClients() const ;
+
+
+            const std::string& getTopic() const ;
+            void setTopic(const std::string& topic);
+
+
+
+            bool getIsInviteOnly();
+            bool getIsTopicRestricted();
+            std::string getChannelKey();
+            int getUsersLimit();
+
+            void setIsInviteOnly(bool x);
+            void setIsTopicRestricted(bool x);
+            void setChannelKey(std::string s);
+            void setUsersLimit(int x);
+
 
             void addClient(Client* client);
             void removeClient(Client* client);
