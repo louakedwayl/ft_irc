@@ -17,100 +17,101 @@ int main(int argc, char **argv)
     std::cout << "[Server] Set up poll fd array\n" << std::endl;
 
     while (1) 
-{
-    int status = poll(data.getPollFds().data(), data.getPollFds().size(), 2000);
-    if (status == -1) 
     {
-        std::cerr << "[Server] Poll error: " << strerror(errno) << std::endl;
-        exit(1);
-    }
-    else if (status == 0) 
-    {
-        std::cout << "[Server] Poll timeout reached: no sockets ready. Looping again..." << std::endl;
-        continue;
-    }
-
-    for (size_t i = 0; i < data.getPollFds().size(); i++) 
-    {
-        short revents = data.getPollFds()[i].revents;
-        int fd = data.getPollFds()[i].fd;
-
-        if (revents == 0)
-            continue; // rien à faire
-
-        std::cout << "[Server] socket FD " << fd << " is ready for ";
-
-        if (revents & POLLIN) std::cout << "reading ";
-        if (revents & POLLOUT) std::cout << "writing ";
-        if (revents & POLLERR) std::cout << "error ";
-        if (revents & POLLHUP) std::cout << "hangup ";
-        std::cout << std::endl;
-
-        // Gestion des erreurs & hangup avant toute lecture ou écriture
-        if (revents & (POLLERR | POLLHUP))
+        int status = poll(data.getPollFds().data(), data.getPollFds().size(), 2000);
+        if (status == -1) 
         {
-            std::cerr << "[Server] Closing connection on fd " << fd << " due to error/hangup." << std::endl;
-            // Tu dois fermer la socket, retirer du poll et supprimer le client
-            close(fd);
-            data.removePollFdAtIndex(i);
-            // Suppression du client associé (à implémenter)
-            data.removeClientByFd(fd);
-            // Ajuste i car vecteur modifié
-            --i;
+            std::cerr << "[Server] Poll error: " << strerror(errno) << std::endl;
+            data.shutdown();
+            exit(1);
+        }
+        else if (status == 0) 
+        {
+            std::cout << "[Server] Poll timeout reached: no sockets ready. Looping again..." << std::endl;
             continue;
         }
 
-        if (revents & POLLIN)
+        for (size_t i = 0; i < data.getPollFds().size(); i++) 
         {
-            if (fd == data.getServerSocket())
-            {
-                // Nouvelle connexion entrante
-                accept_new_connection(data);
-            }
-            else
-            {
-                // Données reçues d’un client
-                read_data_from_socket(i, data);
-            }
-        }
+            short revents = data.getPollFds()[i].revents;
+            int fd = data.getPollFds()[i].fd;
 
-        if (revents & POLLOUT)
-        {
-            // Socket prête à écrire, on tente d’envoyer les données du buffer
-            Client* client = data.getClientByFd(fd);
-            if (client && !client->getSendBuffer().empty())
+            if (revents == 0)
+                continue; // rien à faire
+
+            std::cout << "[Server] socket FD " << fd << " is ready for ";
+
+            if (revents & POLLIN) std::cout << "reading ";
+            if (revents & POLLOUT) std::cout << "writing ";
+            if (revents & POLLERR) std::cout << "error ";
+            if (revents & POLLHUP) std::cout << "hangup ";
+            std::cout << std::endl;
+
+            // Gestion des erreurs & hangup avant toute lecture ou écriture
+            if (revents & (POLLERR | POLLHUP))
             {
-                int sent = send(fd, client->getSendBuffer().c_str(), client->getSendBuffer().size(), 0);
-                if (sent == -1)
+                std::cerr << "[Server] Closing connection on fd " << fd << " due to error/hangup." << std::endl;
+                // Tu dois fermer la socket, retirer du poll et supprimer le client
+                close(fd);
+                data.removePollFdAtIndex(i);
+                // Suppression du client associé (à implémenter)
+                data.removeClientByFd(fd);
+                // Ajuste i car vecteur modifié
+                --i;
+                continue;
+            }
+
+            if (revents & POLLIN)
+            {
+                if (fd == data.getServerSocket())
                 {
-                    std::cerr << "[Server] Send error on fd " << fd << ": " << strerror(errno) << std::endl;
+                    // Nouvelle connexion entrante
+                    accept_new_connection(data);
+                }
+                else
+                {
+                    // Données reçues d’un client
+                    read_data_from_socket(i, data);
+                }
+            }
+
+            if (revents & POLLOUT)
+            {
+                // Socket prête à écrire, on tente d’envoyer les données du buffer
+                Client* client = data.getClientByFd(fd);
+                if (client && !client->getSendBuffer().empty())
+                {
+                    int sent = send(fd, client->getSendBuffer().c_str(), client->getSendBuffer().size(), 0);
+                    if (sent == -1)
+                    {
+                        std::cerr << "[Server] Send error on fd " << fd << ": " << strerror(errno) << std::endl;
+                        close(fd);
+                        data.removePollFdAtIndex(i);
+                        data.removeClientByFd(fd);
+                        --i;
+                        continue;
+                    }
+                    else
+                    {
+                        client->eraseFromSendBuffer(sent);
+                        if (client->getSendBuffer().empty())
+                        {
+                            // Plus rien à envoyer, on désactive POLLOUT pour ce fd
+                            data.getPollFds()[i].events &= ~POLLOUT;
+                        }
+                    }
+                }
+                if (client->getState() == TO_DISCONNECT)
+                {
+                    std::cout << "[Server] Disconnecting client on fd " << fd << " after flush.\n";
                     close(fd);
                     data.removePollFdAtIndex(i);
                     data.removeClientByFd(fd);
                     --i;
                     continue;
                 }
-                else
-                {
-                    client->eraseFromSendBuffer(sent);
-                    if (client->getSendBuffer().empty())
-                    {
-                        // Plus rien à envoyer, on désactive POLLOUT pour ce fd
-                        data.getPollFds()[i].events &= ~POLLOUT;
-                    }
-                }
-            }
-            if (client->getState() == TO_DISCONNECT)
-            {
-                std::cout << "[Server] Disconnecting client on fd " << fd << " after flush.\n";
-                close(fd);
-                data.removePollFdAtIndex(i);
-                data.removeClientByFd(fd);
-                --i;
-                continue;
             }
         }
-    }
     }
 }
 
@@ -180,13 +181,76 @@ void QUIT_SERV (Client *client, Command command)
     exit (0);
 }
 
+static bool	does_nickname_have_channel_prefix(std::string const & nickname)
+{
+	if (nickname[0] == '#' || nickname[0] == '&' || nickname[0] == '~' ||
+		nickname[0] == '@' || nickname[0] == '%' || nickname[0] == ':')
+			return (true);
+	if (nickname[0] == '+' && nickname[1])
+	{
+		if ( // norme IRC
+			nickname[1] == 'q' || nickname[1] == 'a' || nickname[1] == 'o' ||
+			nickname[1] == 'h' || nickname[1] == 'v')
+			return (true);
+	}
+	return (false);
+}
+
+
 void NICK (Client *client, Command command)
 {
      Data &data = Data::getInstance();
 
+     if (client->getState() == CONNECTING)
+     {
+        std::cerr << "[Server] NICK: client " << client->getFd() << ": Password not sent. Can't register nickname."<< std::endl;
+        client->appendToSendBuffer(":irc.slytherin.com 433 * <nick> : You need send a password for register \r\n");
+        for (size_t i = 0; i < data.getPollFds().size(); ++i)
+        {
+            if (data.getPollFds()[i].fd == client->getFd())
+            {
+                data.getPollFds()[i].events |= POLLOUT;
+                break;
+            }
+        }
+        return ;
+     }
+
     // verifier si nickname deja pris 
     // si oui  envoies ce message d’erreur au client. :irc.slytherin.com 433 * <nick> :Nickname is already in use
-    if (!command.args.empty() && data.nickNameIsAvailable(command.args[0]))
+    if (command.args.empty())
+    {
+        std::cerr << "[Server] NICK: client " << client->getFd() << "no argument." << std::endl;
+        client->appendToSendBuffer(":irc.slytherin.com 433 * <nick> : no argument\r\n");
+        for (size_t i = 0; i < data.getPollFds().size(); ++i)
+        {
+            if (data.getPollFds()[i].fd == client->getFd())
+            {
+                data.getPollFds()[i].events |= POLLOUT;
+                break;
+            }
+        }
+    } 
+    else if (does_nickname_have_channel_prefix(command.args[0])) 
+    {
+        std::cerr << "[Server] NICK: client " << client->getFd() << "nickname cannot start by a channel prefix."<< std::endl;
+        client->appendToSendBuffer(":irc.slytherin.com 433 * <nick> : nickname cannot start by a channel prefix\r\n");
+        for (size_t i = 0; i < data.getPollFds().size(); ++i)
+        {
+            if (data.getPollFds()[i].fd == client->getFd())
+            {
+                data.getPollFds()[i].events |= POLLOUT;
+                break;
+            }
+        }
+    }
+    else if (command.args[0] == "<nick>_")
+    {
+        return;
+    }
+
+
+    else if (data.nickNameIsAvailable(command.args[0]))
     {
             client->setNickName(command.args[0]);
             client->setState(SENT_NICK);
@@ -197,7 +261,7 @@ void NICK (Client *client, Command command)
     }
     else
     {
-        std::cerr << "[Server] Nickname already in use: " << command.args[0] << std::endl;
+        std::cerr << "[Server] NICK: client " << client->getFd() <<" Nickname already in use: " << command.args[0] << std::endl;
         client->appendToSendBuffer(":irc.slytherin.com 433 * <nick> :Nickname is already in use\r\n");
         for (size_t i = 0; i < data.getPollFds().size(); ++i)
         {
