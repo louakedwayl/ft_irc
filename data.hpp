@@ -68,6 +68,8 @@ class Data
 
         bool nickNameIsAvailable(const std::string& nick) const;
         void enablePollOutIfNeeded(Client* client);
+
+        
 };
 
 //data.cpp
@@ -80,3 +82,37 @@ int parse(int argc, char **argv);
 int make_server();
 int create_server_socket(void);
 int server_listen();
+
+//NICK.cpp
+void NICK(Client *client, Command command);
+bool	does_nickname_have_channel_prefix(std::string const & nickname);
+
+//answer.cpp
+void send001(Client* client);
+void send002(Client* client);
+void send003(Client* client);
+void send004(Client* client);
+
+//LIST.cpp
+void LIST(Client* client, Command command);
+
+//PASS.cpp
+void PASS (Client *client, Command command);
+
+//JOIN.cpp
+void JOIN(Client* client, Command command);
+
+//CAP.cpp
+void CAP (Client* client);
+
+//USER.cpp
+void USER(Client* client, Command command);
+
+//PING.cpp
+void PING(Client* client, Command command);
+
+//UNKNOWN.cpp
+void UNKNOWN(Client *client, Command command);
+
+//QUIT_SERV.cpp
+void QUIT_SERV (Client *client, Command command);

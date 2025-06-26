@@ -1,18 +1,94 @@
-void	JOIN()
+#include "../data.hpp"
+
+void JOIN(Client* client, Command command)
 {
-	// on crée une stringstream sur notre string d'arg 
+    Data& data = Data::getInstance();
 
-	// on extrait le premier argument (la Channel) de la stringstream
+    // si le client n est pas pleinement enregistrer
+    if (client->getState() != REGISTERED)
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> client not registered\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
 
-	// si l'extraction de du premier args de stringstream vers channel_name échoue ou que le résultat est vide -> erreur
+    //si join sans arg
+    if (command.args.empty())
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> no argument\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
 
-	// si la Channel est invite-only, erreur
-	
-	// on extrait le deuxième arg de stringstream (le mot de passe)
+    // si plus de 1 cmd et 2 arg
+    if (command.args.size() > 2)
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> usage: <channel> (<key>)\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
 
-	// si la Channel requiert un mot de passe et que l'extraction a échoué, ou que le mot de passe est nul ou faux, erreur
+    //si le premier arg ne commence pas par #
+    std::string channelName = command.args[0];
+    if (channelName.empty() || channelName[0] != '#')
+    {
+        client->appendToSendBuffer("ERROR :<JOIN> channel name must start with '#'\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
 
-	// si la Channel n'existe pas, on la crée (vérifier syntaxe et mettre créateur comme operator dans fonction de création) et on return
+    Channel* channel = data.getThisChannel(channelName);
 
-	// on ajoute le Client à la Channel et on affiche ce fait aux autres membres
+    if (channel)
+    {
+        // Channel invite-only : vérifier si client est invité
+        if (channel->getIsInviteOnly())
+        {
+            const std::vector<Client*>& invited = channel->getInvited();
+            bool isInvited = std::find(invited.begin(), invited.end(), client) != invited.end();
+            if (!isInvited)
+            {
+                client->appendToSendBuffer("ERROR :<JOIN> channel is invite-only\r\n");
+                data.enablePollOutIfNeeded(client);
+                return;
+            }
+            // Client invité, on peut retirer l’invitation après join si tu veux
+            // (optionnel selon ta logique)
+        }
+
+        // Channel avec clé : vérifier la clé
+        std::string key = channel->getChannelKey();
+        if (!key.empty())
+        {
+            if (command.args.size() < 2 || command.args[1] != key)
+            {
+                client->appendToSendBuffer("ERROR :<JOIN> invalid channel key\r\n");
+                data.enablePollOutIfNeeded(client);
+                return;
+            }
+        }
+
+        // Limite d’utilisateurs
+        if (channel->getUsersLimit() > 0 && channel->getClients().size() >= static_cast<size_t>(channel->getUsersLimit()))
+        {
+            client->appendToSendBuffer("ERROR :<JOIN> channel user limit reached\r\n");
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+
+        // Ajout client
+        channel->addClient(client);
+        client->addChannel(channel);
+        std::cout << "[server] : client " << client->getFd() << " joined channel " << channelName << std::endl;
+    }
+    else
+    {
+        // Création d’un nouveau channel
+        channel = new Channel(channelName);
+        data.getChannel().push_back(channel);
+        channel->addClient(client);
+        client->addChannel(channel);
+        channel->addOperator(client); // Créateur = opérateur
+        std::cout << "[server] : client " << client->getFd() << " created new channel " << channelName << std::endl;
+    }
 }

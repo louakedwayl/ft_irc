@@ -1,9 +1,13 @@
 #include "../data.hpp"
 
-void CAP (Client* client)
+void UNKNOWN(Client *client, Command command)
 {
+    (void)client;
+    (void)command;
     Data &data = Data::getInstance();
-    client->appendToSendBuffer("CAP * LS :\r\n");
+
+    client->appendToSendBuffer("ERROR : Unknown command.\r\n");
+    std::cout << "[SERVER] ERROR : Unknown command." <<std::endl;
 
     for (size_t i = 0; i < data.getPollFds().size(); ++i)
     {

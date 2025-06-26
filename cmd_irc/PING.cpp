@@ -1,9 +1,16 @@
 #include "../data.hpp"
 
-void CAP (Client* client)
+void PING(Client* client, Command command) 
 {
     Data &data = Data::getInstance();
-    client->appendToSendBuffer("CAP * LS :\r\n");
+
+    if (command.args.empty()) 
+    {
+        // Pas d’argument, ignore ou envoie une erreur.
+        return;
+    }
+    std::string response = "PONG :" + command.args[0] + "\r\n";
+    client->appendToSendBuffer(response);
 
     for (size_t i = 0; i < data.getPollFds().size(); ++i)
     {
@@ -13,4 +20,5 @@ void CAP (Client* client)
             break;
         }
     }
+
 }
