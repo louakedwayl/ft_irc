@@ -11,6 +11,7 @@ class Channel
             std::string _name;
             std::string _topic;
             std::vector<Client*> _clients; // clients présents dans le channel
+            std::vector<Client*> _invited;
             std::vector<Client*> _operators;
 
             bool                _is_invite_only;
@@ -24,6 +25,8 @@ class Channel
 
             const std::string& getName() const ;
             const std::vector<Client*>& getClients() const ;
+
+        const std::vector<Client*>& getInvited() const ;
 
 
             const std::string& getTopic() const ;

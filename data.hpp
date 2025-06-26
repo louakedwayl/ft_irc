@@ -67,7 +67,7 @@ class Data
         void clearClients();
 
         bool nickNameIsAvailable(const std::string& nick) const;
-
+        void enablePollOutIfNeeded(Client* client);
 };
 
 //data.cpp

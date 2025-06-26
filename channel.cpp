@@ -12,6 +12,9 @@ const std::string& Channel::getName() const { return _name; }
 
 const std::vector<Client*>& Channel::getClients() const { return _clients; }
 
+const std::vector<Client*>& Channel::getInvited() const { return _invited; }
+
+
 void Channel::addClient(Client* client)
 {
     if (std::find(_clients.begin(), _clients.end(), client) == _clients.end())

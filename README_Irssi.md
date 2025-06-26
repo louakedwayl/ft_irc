@@ -12,6 +12,9 @@ https://modern.ircdocs.horse/#rplwelcome-001
 ### server irc random for test
 irssi -c irc.oftc.net -p 6697 -n testwayl 
 
+##test
+/rawlog open test_yassine.log
+
 ## First TCP request
 
 ```irc

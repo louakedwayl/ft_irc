@@ -345,49 +345,42 @@ void NICK(Client *client, Command command)
 }
 
 
-void LIST (Client *client, Command command)
+void LIST(Client* client, Command command)
 {
-    (void)client;
-    (void)command;
-    Data &data = Data::getInstance();
+    std::cout << "[DEBUG] LIST command called by client " << client->getFd() << std::endl;
 
-    std::vector<Channel *>ChannelHub = data.getChannel();
+    (void)command;
+    Data& data = Data::getInstance();
+
+    std::vector<Channel*> ChannelHub = data.getChannel();
+
+    // En-tête obligatoire pour /LIST
+    client->appendToSendBuffer(":irc.slytherin.com 321 * Channel :Users  Name\r\n");
+
     if (ChannelHub.empty())
     {
-        client->appendToSendBuffer(":irc.slytherin.com 321 * Channel :Users  Name\r\n");
-        client->appendToSendBuffer(":irc.slytherin.com 461 * None channel\n :LIST: you can create a channel whith JOIN\r\n");
+        client->appendToSendBuffer(":irc.slytherin.com 461 * None channel\r\n");
     }
     else
     {
-        client->appendToSendBuffer(":irc.slytherin.com 321 * Channel :Users  Name\r\n");
-        for (size_t i = 0; i < ChannelHub.size() ; i++)
+        for (size_t i = 0; i < ChannelHub.size(); ++i)
         {
-            Channel *chan = ChannelHub[i];
-
-            // Récupérer nom, nb users, topic (assure-toi que ces méthodes existent)
+            Channel* chan = ChannelHub[i];
             std::string name = chan->getName();
             size_t userCount = chan->getClients().size();
             std::string topic = chan->getTopic();
 
             std::stringstream ss;
-            ss << userCount;
-            std::string userCountStr = ss.str();
-
-            std::string line = ":irc.slytherin.com 322 * " + name + " " + userCountStr + " :" + topic + "\r\n";
-
-
-            client->appendToSendBuffer(line);
-        }
-    }
-    for (size_t i = 0; i < data.getPollFds().size(); ++i)
-    {
-        if (data.getPollFds()[i].fd == client->getFd())
-        {
-            data.getPollFds()[i].events |= POLLOUT;
-            break;
+            ss << ":irc.slytherin.com 322 * " << name << " " << userCount << " :" << topic << "\r\n";
+            client->appendToSendBuffer(ss.str());
         }
     }
 
+    // Fin de la liste (obligatoire pour que Irssi affiche)
+    client->appendToSendBuffer(":irc.slytherin.com 323 * :End of /LIST\r\n");
+
+    // Active POLLOUT si besoin
+    data.enablePollOutIfNeeded(client);
 }
 
 void USER(Client* client, Command command)
@@ -454,70 +447,99 @@ if (client->isFullyRegistered())
 }
 
 
-void JOIN (Client *client, Command command)
+void JOIN(Client* client, Command command)
 {
-    Data &data = Data::getInstance();
+    Data& data = Data::getInstance();
 
+    // si le client n est pas pleinement enregistrer
     if (client->getState() != REGISTERED)
     {
-        client->appendToSendBuffer("ERROR :<JOIN> client not registered \r\n");
-        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> client " << client->getFd() << " not registered" << std::endl;
+        client->appendToSendBuffer("ERROR :<JOIN> client not registered\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
     }
-    else if (command.args.empty())
+
+    //si join sans arg
+    if (command.args.empty())
     {
         client->appendToSendBuffer("ERROR :<JOIN> no argument\r\n");
-        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> no argument." << std::endl;
+        data.enablePollOutIfNeeded(client);
+        return;
     }
-    else if (command.args.size() >= 3 && !command.args[0].empty() && !command.args[1].empty() && !command.args[2].empty())
+
+    // si plus de 1 cmd et 2 arg
+    if (command.args.size() > 2)
     {
-        client->appendToSendBuffer("ERROR :<JOIN> usage : <channel> <password> \r\n");
-        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> usage : <channel> <password> ." << std::endl;
+        client->appendToSendBuffer("ERROR :<JOIN> usage: <channel> (<key>)\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
     }
-    else if (!command.args[0].empty())
+
+    //si le premier arg ne commence pas par #
+    std::string channelName = command.args[0];
+    if (channelName.empty() || channelName[0] != '#')
     {
-        if (command.args[0][0] != '#')
+        client->appendToSendBuffer("ERROR :<JOIN> channel name must start with '#'\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    Channel* channel = data.getThisChannel(channelName);
+
+    if (channel)
+    {
+        // Channel invite-only : vérifier si client est invité
+        if (channel->getIsInviteOnly())
         {
-            client->appendToSendBuffer("ERROR :<JOIN> channel's name should begin by #.\r\n");
-            std::cout << "[server] : client " << client->getFd() << "ERROR :<JOIN> channel's name should begin by #." << std::endl;
+            const std::vector<Client*>& invited = channel->getInvited();
+            bool isInvited = std::find(invited.begin(), invited.end(), client) != invited.end();
+            if (!isInvited)
+            {
+                client->appendToSendBuffer("ERROR :<JOIN> channel is invite-only\r\n");
+                data.enablePollOutIfNeeded(client);
+                return;
+            }
+            // Client invité, on peut retirer l’invitation après join si tu veux
+            // (optionnel selon ta logique)
         }
-    }
-    else if (data.getThisChannel(command.args[0]) && data.getThisChannel(command.args[0])->getIsInviteOnly() == true)
-    {
-        client->appendToSendBuffer("ERROR :<JOIN> channel is Invite-only.\r\n");
-        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> channel is Invite-only." << std::endl;
-    }
-    else if (!data.getThisChannel(command.args[0])->getChannelKey().empty() && (command.args[1].empty() || command.args[1] != data.getThisChannel(command.args[0])->getChannelKey()))
-    {
-        client->appendToSendBuffer("ERROR :<JOIN> Invalid channel key.\r\n");
-    }
-    else if (data.getThisChannel(command.args[0])->getUsersLimit() > 0 && data.getThisChannel(command.args[0])->getClients().size() >= static_cast<size_t>(data.getThisChannel(command.args[0])->getUsersLimit()))
-    {
-        client->appendToSendBuffer("ERROR :<JOIN> Channel user limit has been reached.\r\n");
-        std::cout << "[server] : client " << client->getFd() << " ERROR :<JOIN> Channel user limit has been reached." << std::endl;
-    }
-    else if (data.getThisChannel(command.args[0]))
-    {
-        data.getThisChannel(command.args[0])->addClient(client);
-        std::cout << "[server] : client " << client->getFd() << "added to channel " <<  data.getThisChannel(command.args[0])->getName() << std::endl;
+
+        // Channel avec clé : vérifier la clé
+        std::string key = channel->getChannelKey();
+        if (!key.empty())
+        {
+            if (command.args.size() < 2 || command.args[1] != key)
+            {
+                client->appendToSendBuffer("ERROR :<JOIN> invalid channel key\r\n");
+                data.enablePollOutIfNeeded(client);
+                return;
+            }
+        }
+
+        // Limite d’utilisateurs
+        if (channel->getUsersLimit() > 0 && channel->getClients().size() >= static_cast<size_t>(channel->getUsersLimit()))
+        {
+            client->appendToSendBuffer("ERROR :<JOIN> channel user limit reached\r\n");
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+
+        // Ajout client
+        channel->addClient(client);
+        client->addChannel(channel);
+        std::cout << "[server] : client " << client->getFd() << " joined channel " << channelName << std::endl;
     }
     else
     {
-        Channel* channel = new Channel(command.args[0]);
+        // Création d’un nouveau channel
+        channel = new Channel(channelName);
         data.getChannel().push_back(channel);
         channel->addClient(client);
-        std::cout << "[server] : client " << client->getFd() << "created new channel " << channel->getName() << std::endl;
+        client->addChannel(channel);
+        channel->addOperator(client); // Créateur = opérateur
+        std::cout << "[server] : client " << client->getFd() << " created new channel " << channelName << std::endl;
     }
-
-    for (size_t i = 0; i < data.getPollFds().size(); ++i)
-    {
-        if (data.getPollFds()[i].fd == client->getFd())
-        {
-            data.getPollFds()[i].events |= POLLOUT;
-            break;
-        }
-    }
-
 }
+
 
 void UNKNOWN (Client *client, Command command)
 {
