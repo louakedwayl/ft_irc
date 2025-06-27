@@ -76,6 +76,7 @@ void JOIN(Client* client, Command command)
             return;
         }
 
+        std::cout << "ici " <<std::endl;
         // Ajout client
         channel->addClient(client);
         client->addChannel(channel);
@@ -83,6 +84,7 @@ void JOIN(Client* client, Command command)
     }
     else
     {
+        std::cout << "ici 2" <<std::endl;
         // Création d’un nouveau channel
         channel = new Channel(channelName);
         data.getChannel().push_back(channel);

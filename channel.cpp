@@ -33,11 +33,13 @@ bool Channel::hasClient(Client* client) const
 
 void Channel::broadcastMessage(Client* sender, const std::string& message) const
 {
+    Data& data = Data::getInstance();
     for (size_t i = 0; i < _clients.size(); ++i)
     {
         if (_clients[i] != sender)
         {
             _clients[i]->sendMessage(message); // méthode à définir dans Client
+            data.enablePollOutIfNeeded(_clients[i]);
         }
     }
 }

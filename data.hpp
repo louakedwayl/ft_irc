@@ -47,7 +47,7 @@ class Data
         int getPort() const;
         void setPort(int port);
 
-        std::vector<Channel*>getChannel() const;
+        std::vector<Channel*>& getChannel() ;
         Channel*getThisChannel(const std::string& name) const;
 
 
@@ -68,7 +68,8 @@ class Data
 
         bool nickNameIsAvailable(const std::string& nick) const;
         void enablePollOutIfNeeded(Client* client);
-
+        
+        Client* getClientByNickname(const std::string& nickname);
         
 };
 
@@ -116,3 +117,5 @@ void UNKNOWN(Client *client, Command command);
 
 //QUIT_SERV.cpp
 void QUIT_SERV (Client *client, Command command);
+
+//

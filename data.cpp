@@ -120,19 +120,19 @@ bool Data::nickNameIsAvailable(const std::string& nick) const
     return true;  // Nick libre
 }
 
-std::vector<Channel*>Data::getChannel() const
+std::vector<Channel*>& Data::getChannel() 
 {
     return _channels;
 }
 
 Channel* Data::getThisChannel(const std::string& name) const
 {
-    for (size_t i = 0 ; i < getChannel().size() ; i++)
+    for (size_t i = 0 ; i < _channels.size() ; ++i)
     {
-        if (_channels[i]->getName() == name)
-            return (_channels[i]);
+        if (_channels[i] && _channels[i]->getName() == name)
+            return _channels[i];
     }
-    return (NULL);
+    return NULL;
 }
 
 void Data::enablePollOutIfNeeded(Client* client)
@@ -153,4 +153,14 @@ void Data::enablePollOutIfNeeded(Client* client)
             return;
         }
     }
+}
+
+Client* Data::getClientByNickname(const std::string& nickname)
+{
+    for (size_t i = 0; i < _clients.size(); ++i)
+    {
+        if (_clients[i] && _clients[i]->getNickName() == nickname)
+            return _clients[i];
+    }
+    return NULL; // Pas trouvé
 }

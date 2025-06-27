@@ -145,6 +145,120 @@ void accept_new_connection(Data &data)
     std::cout << "[Server] Accepted new connection on client socket " << client_fd << std::endl;
 }
 
+void PRIVMSG(Client* client, Command command)
+{
+    Data& data = Data::getInstance();
+    
+    
+    if (command.args.size() < 2)
+    {
+        client->appendToSendBuffer("ERROR :No recipient or message given\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+    
+    std::string  recipient = command.args[0];
+    std::string message;
+    
+    for (size_t i = 1; i < command.args.size(); ++i)
+    {
+        if (i > 1)
+            message+= " ";
+        message += command.args[i]; 
+    }
+
+    // Supprime le ':' initial s'il est là
+    if (!message.empty() && message[0] == ':')
+        message = message.substr(1);
+
+
+    if (recipient[0] == '#')  // C'est un canal
+    {
+            Channel* channel = data.getThisChannel(recipient);
+        if (!channel)
+        {
+            client->appendToSendBuffer("ERROR :No such channel\r\n");
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+        // Envoie le message à tous les membres sauf l'émetteur
+        channel->broadcastMessage(client, ":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n");
+        std::cout << "test" <<std::endl;
+        
+    }
+    else  // Message privé à un utilisateur
+    {
+        Client* target = data.getClientByNickname(recipient);
+        if (!target)
+        {
+            client->appendToSendBuffer("ERROR :No such nick\r\n");
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+        target->sendMessage(":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n");
+        data.enablePollOutIfNeeded(target);
+    }
+}
+
+void KICK(Client* client, Command command)
+{
+    Data &data = Data::getInstance();
+
+    if (command.args.size() < 2)
+    {
+        client->appendToSendBuffer("ERROR :No channel or user given\r\n");
+        data.enablePollOutIfNeeded(client);
+        return ;
+    }
+
+    std::string channelName = command.args[0];
+    std::string targetNick = command.args[1];
+    std::string reason = (command.args.size() >= 3) ? command.args[2] : "Kicked";
+
+    Channel* channel = data.getThisChannel(channelName);
+    if (!channel)
+    {
+        client->appendToSendBuffer("ERROR :<KICK> No such channel\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    // 1. Vérifie que le client est dans le channel
+    if (!channel->hasClient(client))
+    {
+        client->appendToSendBuffer("ERROR :<KICK> You're not on that channel\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    // 2. Vérifie que le client est opérateur
+    if (!channel->isOperator(client))
+    {
+        client->appendToSendBuffer("ERROR :<KICK> You must be channel operator\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    // 3. Trouver le client à expulser
+    Client* target = data.getClientByNickname(targetNick);
+    if (!target || !channel->hasClient(target))
+    {
+        client->appendToSendBuffer("ERROR :<KICK> User not in channel\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    // 4. Envoi du message de KICK à tous les membres du channel
+    std::string kickMsg = ":" + client->getPrefix() + " KICK " + channelName + " " + targetNick + " :" + reason + "\r\n";
+    channel->broadcastMessage(NULL, kickMsg); // NULL = tous les membres
+
+    // 5. Retirer le target du channel
+    channel->removeClient(target);
+    target->removeChannel(channel); // si tu as cette méthode
+}
+
+
+
 void handleCommand(Client* client, Command command)
 {
     if (command.name == "CAP")
@@ -177,11 +291,11 @@ void handleCommand(Client* client, Command command)
     }
     else if (command.name == "PRIVMSG")
     {
-
+        PRIVMSG(client, command);
     }
     else if (command.name == "KICK")
     {
-
+        KICK(client, command);
     }
     else if (command.name == "TOPIC")
     {

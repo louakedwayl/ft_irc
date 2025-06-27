@@ -26,13 +26,10 @@ class Channel
             const std::string& getName() const ;
             const std::vector<Client*>& getClients() const ;
 
-        const std::vector<Client*>& getInvited() const ;
-
+            const std::vector<Client*>& getInvited() const ;
 
             const std::string& getTopic() const ;
             void setTopic(const std::string& topic);
-
-
 
             bool getIsInviteOnly();
             bool getIsTopicRestricted();

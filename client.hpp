@@ -13,8 +13,6 @@ enum ClientState
     REGISTERED     // Le client est totalement connecté (PASS + NICK + USER valides)
 };
 
-
-
 class Client
 {
     private :
@@ -63,6 +61,5 @@ class Client
 
         bool isFullyRegistered() const;
 
-
-
+        std::string getPrefix() const;
 };

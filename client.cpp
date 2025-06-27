@@ -56,7 +56,8 @@ void Client::sendMessage(const std::string& message) const
 
 void Client::addChannel(Channel* channel)
 {
-    if (std::find(_channels.begin(), _channels.end(), channel) == _channels.end()) {
+    if (std::find(_channels.begin(), _channels.end(), channel) == _channels.end()) 
+    {
         _channels.push_back(channel);
     }
 }
@@ -105,4 +106,9 @@ bool Client::isFullyRegistered() const
 {
         std::cout << "Debug isFullyRegistered: nick='" << getNickName() << "' user='" << getUserName() << "'" << std::endl;
     return !getNickName().empty() && !getUserName().empty();
+}
+
+std::string Client::getPrefix() const
+{
+    return this->_nickName + "!" + this->_UserName + "@" + this->_hostName;
 }
