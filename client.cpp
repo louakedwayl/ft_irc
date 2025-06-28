@@ -104,7 +104,6 @@ const std::string& Client::getRealName() const
 
 bool Client::isFullyRegistered() const
 {
-        std::cout << "Debug isFullyRegistered: nick='" << getNickName() << "' user='" << getUserName() << "'" << std::endl;
     return !getNickName().empty() && !getUserName().empty();
 }
 

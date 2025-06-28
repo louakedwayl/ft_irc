@@ -191,11 +191,14 @@ void PRIVMSG(Client* client, Command command)
         Client* target = data.getClientByNickname(recipient);
         if (!target)
         {
-            client->appendToSendBuffer("ERROR :No such nick\r\n");
+            client->appendToSendBuffer("401 " + recipient + " :No such nick\r\n"); // Code IRC correct
             data.enablePollOutIfNeeded(client);
             return;
         }
-        target->sendMessage(":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n");
+
+            std::cout << "[DEBUG] Envoi message à " << target->getNickName() << " : " << message << std::endl;
+        std::string fmessage = ":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n" ;
+        target->appendToSendBuffer(fmessage);
         data.enablePollOutIfNeeded(target);
     }
 }
@@ -257,7 +260,138 @@ void KICK(Client* client, Command command)
     target->removeChannel(channel); // si tu as cette méthode
 }
 
+void TOPIC(Client* client, Command command)
+{
+    Data& data = data.getInstance();
 
+    if (client->getState() != REGISTERED)
+    {
+        client->appendToSendBuffer("ERROR :<TOPIC> client not registered\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    if (command.args.empty())
+    {
+        client->appendToSendBuffer("461 " + client->getNickName() + " TOPIC :Not enough parameters\r\n");
+        return;
+    }
+
+    std::string channelName = command.args[0];
+    Channel* channel = data.getThisChannel(channelName);
+
+    if (!channel)
+    {
+        client->appendToSendBuffer("403 " + channelName + " :No such channel\r\n");
+        return;
+    }
+
+    if (!channel->hasClient(client))
+    {
+        client->appendToSendBuffer("442 " + channelName + " :You're not on that channel\r\n");
+        return;
+    }
+
+    // 🧠 Juste lecture du topic
+    if (command.args.size() == 1)
+    {
+        if (channel->getTopic().empty())
+            client->appendToSendBuffer("331 " + client->getNickName() + " " + channelName + " :No topic is set\r\n");
+        else
+            client->appendToSendBuffer("332 " + client->getNickName() + " " + channelName + " :" + channel->getTopic() + "\r\n");
+        return;
+    }
+
+    // 🛡️ Restriction seulement pour la modification du topic
+    if (channel->getIsTopicRestricted() && !channel->isOperator(client))
+    {
+        client->appendToSendBuffer("482 " + client->getNickName() + " " + channelName + " :You're not channel operator\r\n");
+        return;
+    }
+
+    // 📝 Reconstruction du nouveau topic
+    std::string newTopic = command.args[1];
+    for (size_t i = 2; i < command.args.size(); ++i)
+        newTopic += " " + command.args[i];
+
+    if (!newTopic.empty() && newTopic[0] == ':')
+        newTopic = newTopic.substr(1);
+
+    channel->setTopic(newTopic);
+
+    // 📣 Broadcast à tous les membres du canal
+    channel->broadcastMessage(client, ":" + client->getPrefix() + " TOPIC " + channelName + " :" + newTopic + "\r\n");
+}
+
+
+void MODE(Client* client, Command command)
+{
+    (void)client;
+    (void)command;
+}
+
+
+void INVITE(Client* client, Command command)
+{
+  Data& data = Data::getInstance();
+
+    if (client->getState() != REGISTERED)
+    {
+        client->appendToSendBuffer("ERROR :<INVITE> client not registered\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    if (command.args.size() < 2)
+    {
+        client->appendToSendBuffer("461 " + client->getNickName() + " INVITE :Not enough parameters\r\n");
+        return;
+    }
+
+    std::string targetNick = command.args[0];
+    std::string channelName = command.args[1];
+
+    Channel* channel = data.getThisChannel(channelName);
+    if (!channel)
+    {
+        client->appendToSendBuffer("403 " + channelName + " :No such channel\r\n");
+        return;
+    }
+
+    if (!channel->hasClient(client))
+    {
+        client->appendToSendBuffer("442 " + channelName + " :You're not on that channel\r\n");
+        return;
+    }
+
+    if (channel->getIsInviteOnly() && !channel->isOperator(client))
+    {
+        client->appendToSendBuffer("482 " + channelName + " :You're not channel operator\r\n");
+        return;
+    }
+
+    Client* target = data.getClientByNickname(targetNick);
+    if (!target)
+    {
+        client->appendToSendBuffer("401 " + targetNick + " :No such nick\r\n");
+        return;
+    }
+
+    if (channel->hasClient(target))
+    {
+        client->appendToSendBuffer("443 " + targetNick + " " + channelName + " :is already on channel\r\n");
+        return;
+    }
+
+    // Ajouter à la liste des invités du canal
+    channel->addClient(target);
+
+    // Message à l’utilisateur invité
+    target->appendToSendBuffer(":" + client->getPrefix() + " INVITE " + targetNick + " :" + channelName + "\r\n");
+
+    // Message de confirmation à l’émetteur
+    client->appendToSendBuffer("341 " + targetNick + " " + channelName + "\r\n");
+}
 
 void handleCommand(Client* client, Command command)
 {
@@ -297,13 +431,21 @@ void handleCommand(Client* client, Command command)
     {
         KICK(client, command);
     }
+    else if (command.name == "KICK")
+    {
+        INVITE (client, command);
+    }
     else if (command.name == "TOPIC")
     {
-
+        TOPIC (client, command);
     }
     else if (command.name == "MODE")
     {
-
+        MODE (client, command);
+    }
+    else if (command.name == "WHOIS")
+    {
+        
     }
     else if (command.name == "/QUIT_SERV")
     {
