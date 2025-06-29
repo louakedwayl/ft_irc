@@ -31,7 +31,7 @@ class Client
         Client(int fd);
 
         int getFd() const ;
-        void setNickName(const std::string& name);
+        void setNickName(const std::string& name);  
         std::string getNickName() const ;
 
         void setUserName(const std::string& name);
@@ -62,4 +62,6 @@ class Client
         bool isFullyRegistered() const;
 
         std::string getPrefix() const;
+
+        std::string getChannelsList() const;
 };

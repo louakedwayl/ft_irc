@@ -326,9 +326,135 @@ void TOPIC(Client* client, Command command)
 
 void MODE(Client* client, Command command)
 {
-    (void)client;
-    (void)command;
+    Data& data = Data::getInstance();
+
+    if (command.args.empty()) {
+        client->appendToSendBuffer("461 MODE :Not enough parameters\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    std::string target = command.args[0];
+
+    // ---------- MODE <#channel> ----------
+    if (!target.empty() && target[0] == '#') 
+    {
+        Channel* channel = data.getThisChannel(target);
+        if (!channel) 
+        {
+            client->appendToSendBuffer("403 " + target + " :No such channel\r\n");
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+
+        // Si aucun mode donné → afficher les modes actuels
+        if (command.args.size() == 1) 
+        {
+            std::string modeString = "+";
+            if (channel->getIsInviteOnly())       modeString += "i";
+            if (channel->getIsTopicRestricted())  modeString += "t";
+            if (channel->getUsersLimit() != -1)       modeString += "l";
+            if (!channel->getChannelKey().empty())             modeString += "k";
+
+            client->appendToSendBuffer("324 " + client->getNickName() + " " + channel->getName() + " " + modeString + "\r\n");
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+
+        // Vérifie si le client est opérateur
+        if (!channel->isOperator(client)) 
+        {
+            client->appendToSendBuffer("482 " + target + " :You're not channel operator\r\n");
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+
+        std::string modeFlags = command.args[1];
+        bool addMode = true;
+        unsigned int argIndex = 2;
+
+        for (unsigned int i = 0; i < modeFlags.size(); ++i) 
+        {
+            char mode = modeFlags[i];
+            if (mode == '+') 
+            {
+                addMode = true;
+            }
+            else if (mode == '-') 
+            {
+                addMode = false;
+            }
+            else {
+                if (mode == 'i') 
+                {
+                    std::cout << "test" <<std::endl;
+                    channel->setIsInviteOnly(addMode);
+                }
+                else if (mode == 't') {
+                    channel->setIsTopicRestricted(addMode);
+                }
+                else if (mode == 'l') 
+                {
+                    if (addMode) {
+                        if (argIndex >= command.args.size())
+                            break;
+                        int limit = std::atoi(command.args[argIndex].c_str());
+                        ++argIndex;
+                        channel->setUsersLimit(limit);
+                    }
+                        else {
+                                // Il faut gérer la désactivation de la limite d’utilisateurs ici
+                                channel->setUsersLimit(-1); // ou ta valeur spéciale pour "pas de limite"
+                            }
+                }
+                else if (mode == 'k') 
+                {
+                    if (addMode) {
+                        if (argIndex >= command.args.size())
+                            break;
+                        std::string key = command.args[argIndex];
+                        ++argIndex;
+                        channel->setChannelKey(key);
+                    }
+                    else {
+                            channel->setChannelKey(""); // supprimer la clé quand on désactive
+                        }
+                }
+                else if (mode == 'o') 
+                {
+                    if (argIndex >= command.args.size())
+                        break;
+                    std::string targetNick = command.args[argIndex];
+                    ++argIndex;
+                    Client* targetClient = data.getClientByNickname(targetNick);
+                    if (targetClient != NULL) 
+                    {
+                        if (addMode)
+                            channel->addOperator(targetClient);
+                        else
+                            channel->removeOperator(targetClient);
+                    }
+                }
+                else 
+                {
+                    client->appendToSendBuffer("472 " + std::string(1, mode) + " :is unknown mode char\r\n");
+                }
+            }
+        }
+
+        // Construction du message MODE à envoyer à tous les clients du channel
+        std::string modeLine = ":" + client->getPrefix() + " MODE " + channel->getName() + " " + modeFlags;
+        for (std::vector<std::string>::size_type i = 2; i < command.args.size(); ++i) 
+        {
+            modeLine += " " + command.args[i];
+        }
+        modeLine += "\r\n";
+
+        channel->broadcastMessage(NULL ,modeLine);
+        return;
+    }
 }
+
 
 
 void INVITE(Client* client, Command command)
@@ -393,6 +519,55 @@ void INVITE(Client* client, Command command)
     client->appendToSendBuffer("341 " + targetNick + " " + channelName + "\r\n");
 }
 
+
+void WHOIS(Client* client, Command command)
+{
+    Data& data = Data::getInstance();
+
+    if (command.args.empty()) {
+        client->appendToSendBuffer("461 WHOIS :Not enough parameters\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    std::string targetNick = command.args[0];
+    Client* targetClient = data.getClientByNickname(targetNick);
+
+    if (!targetClient) 
+    {
+        client->appendToSendBuffer("401 " + targetNick + " :No such nick\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+
+    // 311 RPL_WHOISUSER
+    std::string reply311 = "311 " + client->getNickName() + " " + targetNick + " " +
+                          targetClient->getUserName() + " " +
+                          targetClient->getHostName() + " * :" +
+                          targetClient->getRealName() + "\r\n";
+    client->appendToSendBuffer(reply311);
+
+    // 312 RPL_WHOISSERVER (serveur sur lequel est connecté l’utilisateur)
+    std::string reply312 = "312 " + client->getNickName() + " " + targetNick + " " +
+                          targetClient->getServerName() + " :IRC Server\r\n";
+    client->appendToSendBuffer(reply312);
+
+    // 319 RPL_WHOISCHANNELS (channels où est présent l’utilisateur)
+    std::string channelsList = targetClient->getChannelsList(); // format "#chan1 #chan2 ..."
+    if (!channelsList.empty()) 
+    {
+        std::string reply319 = "319 " + client->getNickName() + " " + targetNick + " :" + channelsList + "\r\n";
+        client->appendToSendBuffer(reply319);
+    }
+
+    // 318 RPL_ENDOFWHOIS (fin du WHOIS)
+    std::string reply318 = "318 " + client->getNickName() + " " + targetNick + " :End of WHOIS list\r\n";
+    client->appendToSendBuffer(reply318);
+
+    data.enablePollOutIfNeeded(client);
+}
+
+
 void handleCommand(Client* client, Command command)
 {
     if (command.name == "CAP")
@@ -445,7 +620,7 @@ void handleCommand(Client* client, Command command)
     }
     else if (command.name == "WHOIS")
     {
-        
+        WHOIS (client, command);
     }
     else if (command.name == "/QUIT_SERV")
     {

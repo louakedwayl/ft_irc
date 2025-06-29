@@ -111,3 +111,14 @@ std::string Client::getPrefix() const
 {
     return this->_nickName + "!" + this->_UserName + "@" + this->_hostName;
 }
+
+std::string Client::getChannelsList() const
+{
+    std::string list;
+    for (std::vector<Channel*>::const_iterator it = _channels.begin(); it != _channels.end(); ++it) {
+        if (!list.empty())
+            list += " ";
+        list += (*it)->getName();
+    }
+    return list;
+}
