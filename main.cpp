@@ -598,6 +598,10 @@ void handleCommand(Client* client, Command command)
     {
         JOIN  (client, command);
     }
+    else if (command.name == "INVITE")
+    {
+        INVITE (client, command);
+    }
     else if (command.name == "PRIVMSG")
     {
         PRIVMSG(client, command);

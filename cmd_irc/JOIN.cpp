@@ -44,6 +44,7 @@ void JOIN(Client* client, Command command)
         // Channel invite-only : vérifier si client est invité
         if (channel->getIsInviteOnly())
         {
+            std::cout << "test 42554566 " << std::endl;
             const std::vector<Client*>& invited = channel->getInvited();
             bool isInvited = std::find(invited.begin(), invited.end(), client) != invited.end();
             if (!isInvited)

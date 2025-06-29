@@ -2,8 +2,8 @@
 
 Data& Data::getInstance() 
 {
-        static Data data; // instance unique et locale statique
-        return data;
+    static Data data; // instance unique et locale statique
+    return data;
 }
 
 void Data::setServerSocket(int sock) 
@@ -39,7 +39,12 @@ bool Data::checkPassword(const std::string& attempt) const
                 return false;
 }
 
-Data::Data(){}
+Data::Data()
+{
+        Channel *bot = new Channel("bot");
+
+
+}
 
 Data::~Data(){}
 
