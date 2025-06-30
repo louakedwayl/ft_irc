@@ -41,9 +41,11 @@ bool Data::checkPassword(const std::string& attempt) const
 
 Data::Data()
 {
-        Channel *bot = new Channel("bot");
+    Channel *bot = new Channel("#bot");
+    Channel *general = new Channel("#general");
 
-
+    _channels.push_back(bot);
+    _channels.push_back(general);
 }
 
 Data::~Data(){}
