@@ -64,4 +64,7 @@ class Client
         std::string getPrefix() const;
 
         std::string getChannelsList() const;
+
+        void appendToRecvBuffer(const std::string& msg) ;
+        std::string& getRecvBuffer() ;
 };

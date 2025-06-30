@@ -58,7 +58,11 @@ Data::Data()
     _channels.push_back(general);
 }
 
-Data::~Data(){}
+Data::~Data()
+{
+    delete (_channels[0]);
+    delete (_channels[1]);
+}
 
 std::vector<struct pollfd>& Data::getPollFds()
 {

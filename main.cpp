@@ -323,6 +323,7 @@ void TOPIC(Client* client, Command command)
     channel->broadcastMessage(client, ":" + client->getPrefix() + " TOPIC " + channelName + " :" + newTopic + "\r\n");
 }
 
+//marquer message de logs pour les commandes 
 
 void MODE(Client* client, Command command)
 {
@@ -665,6 +666,7 @@ for (size_t i = 0; i < command.args.size(); ++i) {
     }
 }
 
+
 void read_data_from_socket(int i, Data& data)
 {
     char buffer[BUFSIZ];
@@ -674,12 +676,18 @@ void read_data_from_socket(int i, Data& data)
     std::memset(buffer, 0, sizeof(buffer));
     bytes_read = recv(sender_fd, buffer, sizeof(buffer) - 1, 0);
 
+    Client *client = data.getClientByFd(sender_fd);
+    if (!client)
+    {
+
+        return ;
+    }
     if (bytes_read <= 0)
     {
         if (bytes_read == 0)
         {
             // client qui se deco tt seul
-
+            
             close (sender_fd);
             std::cout << "[" << sender_fd << "] Client disconnected." << std::endl;
         }
@@ -691,5 +699,16 @@ void read_data_from_socket(int i, Data& data)
         data.removePollFdAtIndex(i);
         return;
     }
-    parseCommands(data.getClientByFd(sender_fd), buffer);
+
+    client->appendToRecvBuffer(buffer);
+    std::string& recvBuffer = client->getRecvBuffer();
+    size_t pos;
+
+    // Boucle tant qu'on a des lignes complètes (terminées par \r\n)
+    while ((pos = recvBuffer.find("\r\n")) != std::string::npos)
+    {
+        std::string line = recvBuffer.substr(0, pos);
+        parseCommands(client, line.c_str()); // Traite une ligne complète
+        recvBuffer.erase(0, pos + 2); // Enlève la ligne traitée du buffer
+    }
 }

@@ -26,6 +26,18 @@ std::string& Client::getSendBuffer() {
     return _send_buffer;
 }
 
+
+void Client::appendToRecvBuffer(const std::string& msg) 
+{
+    _recv_buffer += msg;
+}
+
+std::string& Client::getRecvBuffer() 
+{
+    return _recv_buffer;
+}
+
+
 void Client::eraseFromSendBuffer(size_t n) 
 {
     if (n >= _send_buffer.size()) {
