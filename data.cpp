@@ -28,17 +28,11 @@ int Data::getPort() const
 
 unsigned long Data::hash_string(const std::string& str) const
 {
-    if (str.empty())
-        return (0);
-
     unsigned long hash = 5381; // Initialize hash to arbitrary seed
-    int multiplicator = 27; // Arbitrary multiplicator
-    int c;
 
-    for (std::string::size_type i = 0; i < str.length(); i++) {
-        c = str[i];
-        hash = ((hash * multiplicator) + hash) + c;
-    }
+    for (std::string::size_type i = 0; i < str.length(); i++)
+        hash = ((hash * 27) + hash) + str[i];
+    
     return (hash);
 }
 
