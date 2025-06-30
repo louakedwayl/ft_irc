@@ -28,7 +28,7 @@ class Data
     private :
         int _server_socket;
         int _port;
-        std::string _password;
+        unsigned long _password;
         std::vector<Client*> _clients;
         std::vector<Channel*> _channels;
         std::vector<struct pollfd> _poll_fds;
@@ -50,7 +50,7 @@ class Data
         std::vector<Channel*>& getChannel() ;
         Channel*getThisChannel(const std::string& name) const;
 
-
+        unsigned long hash_string(const std::string& str) const;
         void setPassword(const std::string& pass);
         bool checkPassword(const std::string& attempt) const;
         

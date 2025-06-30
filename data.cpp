@@ -26,14 +26,30 @@ int Data::getPort() const
         return _port ;
 }
 
+unsigned long Data::hash_string(const std::string& str) const
+{
+    if (str.empty())
+        return (0);
+
+    unsigned long hash = 5381; // Initialize hash to arbitrary seed
+    int multiplicator = 27; // Arbitrary multiplicator
+    int c;
+
+    for (std::string::size_type i = 0; i < str.length(); i++) {
+        c = str[i];
+        hash = ((hash * multiplicator) + hash) + c;
+    }
+    return (hash);
+}
+
 void Data::setPassword(const std::string& pass) 
 {
-        _password = pass ;
+        _password = hash_string(pass) ;
 }
 
 bool Data::checkPassword(const std::string& attempt) const 
 {
-        if (attempt ==_password)
+        if (this->hash_string(attempt) ==_password)
                 return true;
         else 
                 return false;
