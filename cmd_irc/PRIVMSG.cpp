@@ -1,5 +1,5 @@
 #include "../data.hpp"
-
+#include <ctime>
 
 void PRIVMSG(Client* client, Command command)
 {
@@ -46,6 +46,23 @@ void PRIVMSG(Client* client, Command command)
             return;
         }
 
+         if (recipient == "#bot" && message == "/time")
+        {
+            // Générer l’heure actuelle
+            std::time_t now = std::time(NULL);
+            char timebuf[64];
+            std::strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+
+            // Construire la réponse du serveur dans le channel
+            std::string response = ":server!server@irc.server PRIVMSG " + recipient + " :Current server time is ";
+            response += timebuf;
+            response += "\r\n";
+
+            // Envoyer à tous les membres du channel #bot
+            channel->broadcastMessage(NULL, response);
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
 
         // Envoie le message à tous les membres sauf l'émetteur
         channel->broadcastMessage(client, ":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n");
