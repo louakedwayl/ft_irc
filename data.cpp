@@ -185,3 +185,16 @@ Client* Data::getClientByNickname(const std::string& nickname)
     }
     return NULL; // Pas trouvé
 }
+
+void Data::deleteChannel(const std::string& channelName)
+{
+    for (std::vector<Channel*>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+    {
+        if ((*it)->getName() == channelName)
+        {
+            delete *it;               // libère la mémoire du channel
+            _channels.erase(it);       // supprime le pointeur du vector
+            break;                   // on sort après suppression
+        }
+    }
+}

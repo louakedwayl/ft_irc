@@ -69,9 +69,11 @@ void JOIN(Client* client, Command command)
             }
         }
 
+        std::cout << "test 4786"<< std::endl;
         // Limite d’utilisateurs
         if (channel->getUsersLimit() > 0 && channel->getClients().size() >= static_cast<size_t>(channel->getUsersLimit()))
         {
+                    std::cout << "test 4786"<< std::endl;
             client->appendToSendBuffer("ERROR :<JOIN> channel user limit reached\r\n");
             data.enablePollOutIfNeeded(client);
             return;
@@ -94,4 +96,19 @@ void JOIN(Client* client, Command command)
         channel->addOperator(client); // Créateur = opérateur
         std::cout << "[server] : client " << client->getFd() << " created new channel " << channelName << std::endl;
     }
+
+    // Construction du message JOIN
+    std::string joinMsg = ":" + client->getPrefix() + " JOIN " + channelName + "\r\n";
+    channel->broadcastMessage(NULL, joinMsg);           // Envoyer à tous les membres
+
+    // Envoie du topic au client
+    if (channel->getTopic().empty())
+    {
+        client->appendToSendBuffer("331 " + client->getNickName() + " " + channelName + " :No topic is set\r\n");
+    }
+    else
+    {
+        client->appendToSendBuffer("332 " + client->getNickName() + " " + channelName + " :" + channel->getTopic() + "\r\n");
+    }
+    data.enablePollOutIfNeeded(client);
 }

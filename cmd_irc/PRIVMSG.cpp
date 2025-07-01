@@ -1,0 +1,70 @@
+#include "../data.hpp"
+
+
+void PRIVMSG(Client* client, Command command)
+{
+    Data& data = Data::getInstance();
+    
+    
+    if (command.args.size() < 2)
+    {
+        client->appendToSendBuffer("ERROR :No recipient or message given\r\n");
+        data.enablePollOutIfNeeded(client);
+        return;
+    }
+    
+    std::string  recipient = command.args[0];
+    std::string message;
+    
+    for (size_t i = 1; i < command.args.size(); ++i)
+    {
+        if (i > 1)
+            message+= " ";
+        message += command.args[i]; 
+    }
+
+    // Supprime le ':' initial s'il est là
+    if (!message.empty() && message[0] == ':')
+        message = message.substr(1);
+
+
+    if (recipient[0] == '#')  // C'est un canal
+    {
+            Channel* channel = data.getThisChannel(recipient);
+        if (!channel)
+        {
+            client->appendToSendBuffer("ERROR :No such channel\r\n");
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+
+        // Vérifier que le client est dans le channel
+        if (!channel->hasClient(client))
+        {
+            client->appendToSendBuffer("404 " + recipient + " :Cannot send to channel\r\n");
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+
+
+        // Envoie le message à tous les membres sauf l'émetteur
+        channel->broadcastMessage(client, ":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n");
+        std::cout << "test" <<std::endl;
+        
+    }
+    else  // Message privé à un utilisateur
+    {
+        Client* target = data.getClientByNickname(recipient);
+        if (!target)
+        {
+            client->appendToSendBuffer("401 " + recipient + " :No such nick\r\n"); // Code IRC correct
+            data.enablePollOutIfNeeded(client);
+            return;
+        }
+
+            std::cout << "[DEBUG] Envoi message à " << target->getNickName() << " : " << message << std::endl;
+        std::string fmessage = ":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n" ;
+        target->appendToSendBuffer(fmessage);
+        data.enablePollOutIfNeeded(target);
+    }
+}

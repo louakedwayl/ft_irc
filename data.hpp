@@ -70,7 +70,8 @@ class Data
         void enablePollOutIfNeeded(Client* client);
         
         Client* getClientByNickname(const std::string& nickname);
-        
+  
+        void deleteChannel(const std::string& channelName);
 };
 
 //data.cpp
@@ -112,10 +113,30 @@ void USER(Client* client, Command command);
 //PING.cpp
 void PING(Client* client, Command command);
 
+//PRIVMSG.cpp
+void PRIVMSG(Client* client, Command command);
+
 //UNKNOWN.cpp
 void UNKNOWN(Client *client, Command command);
 
 //QUIT_SERV.cpp
 void QUIT_SERV (Client *client, Command command);
 
-//
+//INVITE.cpp
+void INVITE(Client* client, Command command);
+
+//KICK.cpp
+void KICK(Client* client, Command command);
+
+//PART.cpp
+void PART(Client* client, Command command);
+std::vector<std::string> split(const std::string& s, char delimiter);
+
+//WHOIS.cpp
+void WHOIS(Client* client, Command command);
+
+//MODE.cpp
+void MODE(Client* client, Command command);
+
+//TOPIC.cpp
+void TOPIC(Client* client, Command command);
