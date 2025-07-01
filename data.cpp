@@ -162,7 +162,6 @@ void Data::enablePollOutIfNeeded(Client* client)
         return;
     if (client->getSendBuffer().empty())
     {
-        std::cerr << "[WARN] Trying to enable POLLOUT but sendBuffer is empty for fd " << client->getFd() << std::endl;
         return;
     }
     // Activation POLLOUT

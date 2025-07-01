@@ -1,20 +1,13 @@
 #include "data.hpp"
-#include <sstream>
-
-  // le port de notre serveur
-void accept_new_connection(Data &data);
-void read_data_from_socket(int i, Data &data);
 
 int main(int argc, char **argv)
 {
     Data& data = Data::getInstance();
     parse(argc, argv);
-    std::cout << "[Server] 🚀 Lancement du serveur IRC..." << std::endl;
-    
-    // Création du serveur
+    std::cout << "[Server] Starting IRC server..." << std::endl;
+
     if (make_server())
         return (EXIT_FAILURE);
-
     data.addPollFd(data.getServerSocket());
     std::cout << "[Server] Set up poll fd array\n" << std::endl;
 
@@ -29,7 +22,7 @@ int main(int argc, char **argv)
         }
         else if (status == 0) 
         {
-            std::cout << "[Server] Poll timeout reached: no sockets ready. Looping again..." << std::endl;
+            std::cout << "[Server] Waiting for events..." << std::endl;
             continue;
         }
 
@@ -42,23 +35,11 @@ int main(int argc, char **argv)
                 continue; // rien à faire
 
             std::cout << "[Server] socket FD " << fd << " is ready for ";
-
-/*
-POLLERR : il y a une erreur de socket détectée (exemple : problème réseau, 
-socket cassée, erreur inattendue). Le socket n’est pas forcément fermé mais quelque chose ne va pas.
-*/
-
-/*
-POLLHUP : le peer a fermé la connexion (client ou serveur a fermé proprement le socket).
- C’est une "fin de communication" détectée.
-*/
-
             if (revents & POLLIN) std::cout << "reading ";
             if (revents & POLLOUT) std::cout << "writing ";
             if (revents & POLLERR) std::cout << "error ";
             if (revents & POLLHUP) std::cout << "hangup ";
             std::cout << std::endl;
-
             // Gestion des erreurs & hangup avant toute lecture ou écriture
             if (revents & (POLLERR | POLLHUP))
             {
@@ -128,178 +109,3 @@ POLLHUP : le peer a fermé la connexion (client ou serveur a fermé proprement l
 }
 
 
-
-void accept_new_connection(Data &data)
-{
-    int client_fd = accept(data.getServerSocket(), NULL, NULL);
-    if (client_fd == -1)
-     {
-        std::cerr <<"[Server] Accept error: " << strerror(errno) << std::endl;
-        return;
-    }
-
-    Client* new_client = new Client(client_fd);
-    data.addClient(new_client);
-    data.addPollFd(client_fd);
-
-    std::cout << "[Server] Accepted new connection on client socket " << client_fd << std::endl;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-void handleCommand(Client* client, Command command)
-{
-    if (command.name == "CAP")
-    {
-        CAP (client );
-    }
-    else if (command.name == "PASS")
-    {
-        PASS (client, command);
-    }
-    else if (command.name == "NICK")
-    {
-        NICK (client, command);
-    }
-    else if (command.name == "LIST")
-    {
-        LIST (client, command);
-    }
-    else if (command.name == "USER")
-    {
-        USER (client, command);
-    }
-    else if (command.name == "PING")
-    {
-        PING (client, command);
-    }
-    else if (command.name == "JOIN")
-    {
-        JOIN  (client, command);
-    }
-    else if (command.name == "INVITE")
-    {
-        INVITE (client, command);
-    }
-    else if (command.name == "PRIVMSG")
-    {
-        PRIVMSG(client, command);
-    }
-    else if (command.name == "KICK")
-    {
-        KICK(client, command);
-    }
-    else if (command.name == "PART")
-    {
-        PART (client, command);
-    }
-    else if (command.name == "KICK")
-    {
-        INVITE (client, command);
-    }
-    else if (command.name == "TOPIC")
-    {
-        TOPIC (client, command);
-    }
-    else if (command.name == "MODE")
-    {
-        MODE (client, command);
-    }
-    else if (command.name == "WHOIS")
-    {
-        WHOIS (client, command);
-    }
-    else if (command.name == "/QUIT_SERV")
-    {
-        QUIT_SERV(client, command);
-    }
-    else
-    {
-        UNKNOWN(client, command);
-    }
-}
-
-void parseCommands(Client* client, const char* buffer)
-{
-    std::istringstream stream(buffer);
-    std::string line;
-
-    while (std::getline(stream, line))
-    {
-        // retirer \r en fin si présent
-        if (!line.empty() && line[line.size() - 1] == '\r')
-            line.erase(line.size() - 1, 1);
-
-        Command command(line);
-
-std::cout << "line: " << line << std::endl;
-
-
-// Accès à la commande
-std::cout << "Commande: " << command.name << std::endl;
-
-// Affiche tous les arguments
-for (size_t i = 0; i < command.args.size(); ++i) {
-    std::cout << "Arg[" << i << "] = " << command.args[i] << std::endl;
-}
-
-        // Ici, appelle ta fonction qui traite chaque commande
-        handleCommand(client, line);
-    }
-}
-
-
-void read_data_from_socket(int i, Data& data)
-{
-    char buffer[BUFSIZ];
-    int bytes_read;
-    int sender_fd = data.getPollFds()[i].fd;
-
-    std::memset(buffer, 0, sizeof(buffer));
-    bytes_read = recv(sender_fd, buffer, sizeof(buffer) - 1, 0);
-
-    Client *client = data.getClientByFd(sender_fd);
-    if (!client)
-    {
-
-        return ;
-    }
-    if (bytes_read <= 0)
-    {
-        if (bytes_read == 0)
-        {
-            // client qui se deco tt seul
-            
-            close (sender_fd);
-            std::cout << "[" << sender_fd << "] Client disconnected." << std::endl;
-        }
-        else
-        {
-            std::cerr << "[Server] recv() error on fd " << sender_fd << ": " << std::strerror(errno) << std::endl;
-        }
-        close(sender_fd);
-        data.removePollFdAtIndex(i);
-        return;
-    }
-
-    client->appendToRecvBuffer(buffer);
-    std::string& recvBuffer = client->getRecvBuffer();
-    size_t pos;
-
-    // Boucle tant qu'on a des lignes complètes (terminées par \r\n)
-    while ((pos = recvBuffer.find("\r\n")) != std::string::npos)
-    {
-        std::string line = recvBuffer.substr(0, pos);
-        parseCommands(client, line.c_str()); // Traite une ligne complète
-        recvBuffer.erase(0, pos + 2); // Enlève la ligne traitée du buffer
-    }
-}

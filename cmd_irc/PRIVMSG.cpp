@@ -65,9 +65,7 @@ void PRIVMSG(Client* client, Command command)
         }
 
         // Envoie le message à tous les membres sauf l'émetteur
-        channel->broadcastMessage(client, ":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n");
-        std::cout << "test" <<std::endl;
-        
+        channel->broadcastMessage(client, ":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n"); 
     }
     else  // Message privé à un utilisateur
     {
@@ -79,7 +77,6 @@ void PRIVMSG(Client* client, Command command)
             return;
         }
 
-            std::cout << "[DEBUG] Envoi message à " << target->getNickName() << " : " << message << std::endl;
         std::string fmessage = ":" + client->getPrefix() + " PRIVMSG " + recipient + " :" + message + "\r\n" ;
         target->appendToSendBuffer(fmessage);
         data.enablePollOutIfNeeded(target);

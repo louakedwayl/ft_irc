@@ -67,7 +67,6 @@ void MODE(Client* client, Command command)
                 }
                 else if (mode == 't')
                 {
-                    std::cout << "test" <<std::endl;
                     channel->setIsTopicRestricted(addMode);
                 }
                 else if (mode == 'l') 
@@ -126,7 +125,6 @@ void MODE(Client* client, Command command)
             modeLine += " " + command.args[i];
         }
         modeLine += "\r\n";
-
         channel->broadcastMessage(NULL ,modeLine);
         return;
     }

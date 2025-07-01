@@ -44,7 +44,6 @@ void JOIN(Client* client, Command command)
         // Channel invite-only : vérifier si client est invité
         if (channel->getIsInviteOnly())
         {
-            std::cout << "test 42554566 " << std::endl;
             const std::vector<Client*>& invited = channel->getInvited();
             bool isInvited = std::find(invited.begin(), invited.end(), client) != invited.end();
             if (!isInvited)
@@ -69,17 +68,14 @@ void JOIN(Client* client, Command command)
             }
         }
 
-        std::cout << "test 4786"<< std::endl;
         // Limite d’utilisateurs
         if (channel->getUsersLimit() > 0 && channel->getClients().size() >= static_cast<size_t>(channel->getUsersLimit()))
         {
-                    std::cout << "test 4786"<< std::endl;
             client->appendToSendBuffer("ERROR :<JOIN> channel user limit reached\r\n");
             data.enablePollOutIfNeeded(client);
             return;
         }
 
-        std::cout << "ici " <<std::endl;
         // Ajout client
         channel->addClient(client);
         client->addChannel(channel);
@@ -87,7 +83,6 @@ void JOIN(Client* client, Command command)
     }
     else
     {
-        std::cout << "ici 2" <<std::endl;
         // Création d’un nouveau channel
         channel = new Channel(channelName);
         data.getChannel().push_back(channel);

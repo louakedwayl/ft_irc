@@ -20,8 +20,8 @@
 #include "client.hpp"
 #include "channel.hpp"
 #include <algorithm>
+#include <sstream>
 #include "CMD.hpp"
-
 
 class Data
 {
@@ -140,3 +140,11 @@ void MODE(Client* client, Command command);
 
 //TOPIC.cpp
 void TOPIC(Client* client, Command command);
+
+//handleCommand.cpp
+void handleCommand(Client* client, Command command);
+void parseCommands(Client* client, const char* buffer);
+
+//handlePollin.cpp
+void accept_new_connection(Data &data);
+void read_data_from_socket(int i, Data& data);
