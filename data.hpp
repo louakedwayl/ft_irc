@@ -148,3 +148,4 @@ void parseCommands(Client* client, const char* buffer);
 //handlePollin.cpp
 void accept_new_connection(Data &data);
 void read_data_from_socket(int i, Data& data);
+void handlePollin(int fd, int i);

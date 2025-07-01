@@ -59,3 +59,19 @@ void read_data_from_socket(int i, Data& data)
         recvBuffer.erase(0, pos + 2); // Enlève la ligne traitée du buffer
     }
 }
+
+void handlePollin(int fd, int i)
+{
+    Data& data = Data::getInstance();
+
+    if (fd == data.getServerSocket())
+    {
+        // Nouvelle connexion entrante
+        accept_new_connection(data);
+    }
+    else
+    {
+        // Données reçues d’un client
+        read_data_from_socket(i, data);
+    }
+}
