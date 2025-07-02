@@ -149,3 +149,6 @@ void parseCommands(Client* client, const char* buffer);
 void accept_new_connection(Data &data);
 void read_data_from_socket(int i, Data& data);
 void handlePollin(int fd, int i);
+
+//ft_irc.cpp
+void ft_irc ();
