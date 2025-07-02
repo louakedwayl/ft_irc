@@ -152,3 +152,6 @@ void handlePollin(int fd, int i);
 
 //ft_irc.cpp
 void ft_irc ();
+
+//send.cpp
+void SEND(Client* client, Command command);

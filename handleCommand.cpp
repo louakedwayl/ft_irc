@@ -83,6 +83,10 @@ void handleCommand(Client* client, Command command)
     {
         QUIT_SERV(client, command);
     }
+    else if (command.name == "SEND")
+    {
+        SEND(client, command);
+    }
     else
     {
         UNKNOWN(client, command);
