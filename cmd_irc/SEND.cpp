@@ -13,7 +13,8 @@ void SEND(Client* client, Command command)
 {
     Data& data = Data::getInstance();
 
-    if (command.args.size() < 2) {
+    if (command.args.size() < 2) 
+    {
         client->appendToSendBuffer("461 SEND :Not enough parameters\r\n");
         data.enablePollOutIfNeeded(client);
         return;
@@ -31,7 +32,6 @@ void SEND(Client* client, Command command)
         return;
     }
 
-    // Ouvre le fichier
     int file_fd = open(filePath.c_str(), O_RDONLY);
     if (file_fd < 0) 
     {
@@ -40,63 +40,44 @@ void SEND(Client* client, Command command)
         return;
     }
 
-    // deplace le curseur a la fin du fichier pour savoir sa taille
-    off_t filesize = lseek(file_fd, 0, SEEK_END);
-    lseek(file_fd, 0, SEEK_SET);
-
-    // Socket d'écoute
-    int port = 5000 + (rand() % 1000); // simple port dynamique
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    sockaddr_in addr;
-    std::memset(&addr, 0, sizeof(addr));    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
-
-    if (bind(server_fd, (sockaddr*)&addr, sizeof(addr)) < 0 || listen(server_fd, 1) < 0)
-     {
-        client->appendToSendBuffer("551 :Failed to bind or listen\r\n");
-        close(file_fd);
-        data.enablePollOutIfNeeded(client);
-        return;
-    }
-
-    // Convertir IP en entier
-    std::string ip = "127.0.0.1"; 
-    in_addr inaddr;
-    inet_aton(ip.c_str(), &inaddr);
-    unsigned int ipInt = ntohl(inaddr.s_addr);
-
-    // Construire le PRIVMSG avec CTCP DCC SEND
-    std::stringstream ss;
-    ss << "\x01" << "DCC SEND \"" << filePath << "\" " << ipInt << " " << port << " " << filesize << "\x01\r\n";
-    std::string dccMessage = ":" + client->getNickName() + " PRIVMSG " + targetNick + " :" + ss.str();
-
-    // L’envoie à target
-    target->appendToSendBuffer(dccMessage);
-    data.enablePollOutIfNeeded(target);
-
-    std::cout << "[DCC] Attente connexion de " << targetNick << " pour envoyer " << filePath << "...\n";
-
-    // ⚠️ ici tu devrais idéalement créer un thread ou déléguer l’envoi à un gestionnaire de transfert
-    int receiver_fd = accept(server_fd, NULL, NULL);
-    if (receiver_fd < 0) 
+    // Envoi message de début de transfert
     {
-        std::cerr << "Erreur : échec accept()\n";
-        close(file_fd);
-        close(server_fd);
-        return;
+        std::stringstream startMsg;
+        startMsg << ":" << client->getNickName() << " PRIVMSG " << targetNick << " :FILESTART " << filePath << "\r\n";
+        target->appendToSendBuffer(startMsg.str());
+        data.enablePollOutIfNeeded(target);
     }
 
-    // Envoi brut du fichier
-    char buffer[1024];
-    ssize_t n;
-    while ((n = read(file_fd, buffer, sizeof(buffer))) > 0) 
+    const size_t maxIrcMsgLen = 400; // taille max du chunk, sécurité sous 512 total
+    char buffer[maxIrcMsgLen];
+    ssize_t bytesRead;
+
+    while ((bytesRead = read(file_fd, buffer, maxIrcMsgLen)) > 0) 
     {
-        send(receiver_fd, buffer, n, 0);
+        std::string chunk(buffer, bytesRead);
+
+        // Nettoyer le chunk : remplacer \r et \n par espace pour éviter découpage IRC
+        for (size_t i = 0; i < chunk.size(); ++i) 
+        {
+            if (chunk[i] == '\r' || chunk[i] == '\n') 
+                chunk[i] = ' ';
+        }
+
+        // Construire le message PRIVMSG FILEPART
+        std::stringstream msg;
+        msg << ":" << client->getNickName() << " PRIVMSG " << targetNick << " :FILEPART " << chunk << "\r\n";
+
+        target->appendToSendBuffer(msg.str());
+        data.enablePollOutIfNeeded(target);
     }
 
-    close(receiver_fd);
-    close(server_fd);
+    // Message fin de transfert
+    {
+        std::stringstream endMsg;
+        endMsg << ":" << client->getNickName() << " PRIVMSG " << targetNick << " :FILEEND\r\n";
+        target->appendToSendBuffer(endMsg.str());
+        data.enablePollOutIfNeeded(target);
+    }
+
     close(file_fd);
-    std::cout << "[DCC] Transfert terminé vers " << targetNick << "\n";
 }
