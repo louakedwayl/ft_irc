@@ -21,6 +21,7 @@
 #include "channel.hpp"
 #include <algorithm>
 #include <sstream>
+#include <signal.h>
 #include "CMD.hpp"
 
 class Data
@@ -72,6 +73,7 @@ class Data
         Client* getClientByNickname(const std::string& nickname);
   
         void deleteChannel(const std::string& channelName);
+        void clearChannel();
 };
 
 //data.cpp
@@ -155,3 +157,6 @@ void ft_irc ();
 
 //send.cpp
 void SEND(Client* client, Command command);
+
+//signal.cpp
+void handle_signal();

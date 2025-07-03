@@ -13,10 +13,10 @@ purple		= /bin/echo -e "\x1b[35m\#\# $1\x1b[0m"
 
 CMD_SRC = $(addprefix cmd_irc/, CAP.cpp INVITE.cpp JOIN.cpp KICK.cpp MODE.cpp WHOIS.cpp PART.cpp \
                       PRIVMSG.cpp NICK.cpp PASS.cpp TOPIC.cpp USER.cpp LIST.cpp \
-					  PING.cpp UNKNOWN.cpp QUIT_SERV.cpp answer.cpp SEND.cpp)
+					  PING.cpp UNKNOWN.cpp QUIT_SERV.cpp answer.cpp SEND.cpp )
 
-SRC = main.cpp data.cpp parse.cpp server.cpp client.cpp channel.cpp CMD.cpp handleCommand.cpp handlePollin.cpp ft_irc.cpp $(CMD_SRC)
-
+SRC = main.cpp data.cpp parse.cpp server.cpp client.cpp channel.cpp CMD.cpp handleCommand.cpp \
+	handlePollin.cpp ft_irc.cpp signal.cpp $(CMD_SRC)
 
 OBJ = $(SRC:.cpp=.o)
 

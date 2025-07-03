@@ -60,8 +60,6 @@ Data::Data()
 
 Data::~Data()
 {
-    delete (_channels[0]);
-    delete (_channels[1]);
 }
 
 std::vector<struct pollfd>& Data::getPollFds()
@@ -74,6 +72,7 @@ void Data::addPollFd(int fd)
     struct pollfd pfd;
     pfd.fd = fd;
     pfd.events = POLLIN;  // on surveille la lecture
+    pfd.revents = 0;
     _poll_fds.push_back(pfd);
 }
 
@@ -120,15 +119,24 @@ void Data::clearClients()
     _clients.clear();  // vide le vecteur (supprime tous les pointeurs)
 }
 
+void Data::clearChannel()
+{
+    for (size_t i = 0; i < _channels.size(); ++i)
+    {
+        delete _channels[i];  // libère la mémoire
+    }
+    _channels.clear();  // vide le vecteur (supprime tous les pointeurs)
+}
+
 void Data::shutdown()
 {
     for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it)
     {
         close((*it)->getFd());
     }
-
     clearClients();
-    std::cout << "/QUIT_SERV :Server is shutting down, goodbye.";
+    clearChannel();
+    std::cout << "Server is shutting down.";
 }
 
 bool Data::nickNameIsAvailable(const std::string& nick) const
