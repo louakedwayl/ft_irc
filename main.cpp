@@ -4,8 +4,8 @@ int main(int argc, char **argv)
 {
     handle_signal();
 
-    Data& data = Data::getInstance();
     parse(argc, argv);
+    Data& data = Data::getInstance();
     std::cout << "[Server] Starting IRC server..." << std::endl;
     if (make_server())
         return (EXIT_FAILURE);

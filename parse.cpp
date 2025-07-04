@@ -4,12 +4,12 @@ int parse(int argc, char **argv)
 {
     int port;
     
-    Data& data = Data::getInstance();
     if (argc != 3)
     {
         std::cerr << "usage ./ircserv <port> <password>" << std::endl ;
         exit (1);
     }
+    Data& data = Data::getInstance();
     std::istringstream stream(argv[1]);
     if (!(stream >> port))
     {
