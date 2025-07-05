@@ -54,9 +54,13 @@ void ft_irc ()
                 if (client && !client->getSendBuffer().empty())
                 {
                     int sent = send(fd, client->getSendBuffer().c_str(), client->getSendBuffer().size(), 0);
-                    if (sent == -1)
+                    if (sent <= 0)  // gère sent == 0 et sent == -1
                     {
-                        std::cerr << "[Server] Send error on fd " << fd << ": " << strerror(errno) << std::endl;
+                        if (sent == 0)
+                            std::cerr << "[Server] Send returned 0 on fd " << fd << ", closing connection." << std::endl;
+                        else
+                            std::cerr << "[Server] Send error on fd " << fd << ": " << strerror(errno) << std::endl;
+
                         close(fd);
                         data.removePollFdAtIndex(i);
                         data.removeClientByFd(fd);

@@ -46,6 +46,7 @@ void USER(Client* client, Command command)
 
 if (client->isFullyRegistered())
 {
+    client->set_registered();
     client->setState(REGISTERED);
     send001(client);
     send002(client);

@@ -26,6 +26,7 @@ class Client
         std::string _recv_buffer;
         std::string _send_buffer;
         ClientState _state;
+        int         _registered;
         
     public :
         Client(int fd);
@@ -67,4 +68,7 @@ class Client
 
         void appendToRecvBuffer(const std::string& msg) ;
         std::string& getRecvBuffer() ;
+
+        int get_registered() const;
+        void set_registered();
 };

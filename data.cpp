@@ -138,6 +138,7 @@ void Data::shutdown()
     }
     clearClients();
     clearChannel();
+    close (_server_socket);
     std::cout << "Server is shutting down.";
 }
 

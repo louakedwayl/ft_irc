@@ -68,8 +68,9 @@ void NICK(Client *client, Command command)
         }
     }
 
-    if (client->isFullyRegistered())
+    if (client->isFullyRegistered() && client->get_registered() == 0)
     {
+        client->set_registered();
         client->setState(REGISTERED);
         send001(client);
         send002(client);

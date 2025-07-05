@@ -2,7 +2,11 @@
 #include "channel.hpp"
 
 
-Client::Client(int fd) : _fd(fd) , _state(CONNECTING){}
+Client::Client(int fd) : _fd(fd) , _state(CONNECTING){
+    _UserName = "";
+    _nickName = "";
+    _registered = 0;
+}
 
 int Client::getFd() const { return _fd; }
 
@@ -10,9 +14,9 @@ void Client::setNickName(const std::string& name) { _nickName = name; }
 
 std::string Client::getNickName() const { return _nickName; }
 
-void Client::setUserName(const std::string& name) { _nickName = name; }
+void Client::setUserName(const std::string& name) { _UserName = name; }
 
-std::string Client::getUserName() const { return _nickName; }
+std::string Client::getUserName() const { return _UserName; }
 
 void Client::setState(ClientState state) { _state = state; }
 
@@ -133,4 +137,13 @@ std::string Client::getChannelsList() const
         list += (*it)->getName();
     }
     return list;
+}
+
+int Client::get_registered() const
+{
+    return _registered;
+}
+void Client::set_registered()
+{
+    _registered = 1;
 }
