@@ -21,6 +21,7 @@ void TOPIC(Client* client, Command command)
     std::string channelName = command.args[0];
     Channel* channel = data.getThisChannel(channelName);
 
+
     if (!channel)
     {
         client->appendToSendBuffer("403 " + channelName + " :No such channel\r\n");

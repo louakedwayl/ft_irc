@@ -25,6 +25,7 @@ class Channel
             const std::string& getName() const ;
             const std::vector<Client*>& getClients() const ;
 
+            void addInvited(Client* client);
             const std::vector<Client*>& getInvited() const ;
 
             const std::string& getTopic() const ;

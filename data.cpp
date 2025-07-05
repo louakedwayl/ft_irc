@@ -60,6 +60,8 @@ Data::Data()
 
 Data::~Data()
 {
+    clearChannel();
+    clearClients();
 }
 
 std::vector<struct pollfd>& Data::getPollFds()

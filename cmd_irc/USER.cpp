@@ -26,6 +26,7 @@ void USER(Client* client, Command command)
     if (command.args.size() < 4)
     {
         client->appendToSendBuffer(":irc.slytherin.com 461 * USER :Not enough parameters\r\n");
+        data.enablePollOutIfNeeded(client);
         return;
     }
 

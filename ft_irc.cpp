@@ -46,6 +46,11 @@ void ft_irc ()
             {
                 // Socket prête à écrire, on tente d’envoyer les données du buffer
                 Client* client = data.getClientByFd(fd);
+                if (!client) 
+                {
+                    std::cerr << "[Server] POLLOUT but no client found for fd " << fd << std::endl;
+                    continue;
+                }
                 if (client && !client->getSendBuffer().empty())
                 {
                     int sent = send(fd, client->getSendBuffer().c_str(), client->getSendBuffer().size(), 0);
@@ -65,7 +70,7 @@ void ft_irc ()
                             data.getPollFds()[i].events &= ~POLLOUT;
                     }
                 }
-                if (client->getState() == TO_DISCONNECT)
+                if (client->getSendBuffer().empty() && client->getState() == TO_DISCONNECT)
                 {
                     std::cout << "[Server] Disconnecting client on fd " << fd << " after flush.\n";
                     close(fd);

@@ -52,8 +52,6 @@ void JOIN(Client* client, Command command)
                 data.enablePollOutIfNeeded(client);
                 return;
             }
-            // Client invité, on peut retirer l’invitation après join si tu veux
-            // (optionnel selon ta logique)
         }
 
         // Channel avec clé : vérifier la clé

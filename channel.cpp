@@ -15,6 +15,12 @@ const std::vector<Client*>& Channel::getClients() const { return _clients; }
 const std::vector<Client*>& Channel::getInvited() const { return _invited; }
 
 
+void Channel::addInvited(Client* client)
+{
+    if (std::find(_invited.begin(), _invited.end(), client) == _invited.end())
+        _invited.push_back(client);
+}
+
 void Channel::addClient(Client* client)
 {
     if (std::find(_clients.begin(), _clients.end(), client) == _clients.end())
